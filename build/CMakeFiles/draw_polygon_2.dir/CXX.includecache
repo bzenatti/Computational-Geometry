@@ -1,0 +1,36 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../include/Random.h
+random
+-
+
+../include/Types.h
+CGAL/Simple_cartesian.h
+-
+CGAL/Polygon_2.h
+-
+
+/home/brunoz/Desktop/estudos/ComputationalGeometry/CGL/examples/draw_polygon_2.cpp
+Types.h
+-
+CGAL/draw_polygon_2.h
+-
+Random.h
+-
+iostream
+-
+stdlib.h
+-
+vector
+-
+
+/home/brunoz/Desktop/estudos/ComputationalGeometry/CGL/src/Random.cpp
+Random.h
+-
+

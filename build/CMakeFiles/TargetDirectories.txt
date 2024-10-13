@@ -1,0 +1,9 @@
+/home/brunoz/Desktop/estudos/ComputationalGeometry/CGL/build/CMakeFiles/edit_cache.dir
+/home/brunoz/Desktop/estudos/ComputationalGeometry/CGL/build/CMakeFiles/rebuild_cache.dir
+/home/brunoz/Desktop/estudos/ComputationalGeometry/CGL/build/CMakeFiles/draw_segments_3.dir
+/home/brunoz/Desktop/estudos/ComputationalGeometry/CGL/build/CMakeFiles/draw_vectors_3.dir
+/home/brunoz/Desktop/estudos/ComputationalGeometry/CGL/build/CMakeFiles/draw_polygon_2.dir
+/home/brunoz/Desktop/estudos/ComputationalGeometry/CGL/build/CMakeFiles/atividade1.dir
+/home/brunoz/Desktop/estudos/ComputationalGeometry/CGL/build/CMakeFiles/draw_points_2.dir
+/home/brunoz/Desktop/estudos/ComputationalGeometry/CGL/build/CMakeFiles/CGAL_Qt5_moc_and_resources.dir
+/home/brunoz/Desktop/estudos/ComputationalGeometry/CGL/build/CMakeFiles/CGAL_Qt5_moc_and_resources_autogen.dir
