@@ -19,7 +19,7 @@ double vectorMagnitude(CGL::Point2 p1, CGL::Point2 p2);
 double angleBetween(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3,CGL::Point2 p4);
 
 bool isVerticeConvex(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3,bool polygonOrientation);
-bool isVerticeEar(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3, CGL::Point2 point, CGL::Polygon2 P);
+bool isVerticeEar(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3, CGL::Polygon2 P);
 
 bool isInsideTriangle(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3, CGL::Point2 point);
 
@@ -32,7 +32,7 @@ int main() {
     CGL::Polygon2 P;
 
     /* Create vertices. */
-    int ns = 4; /* Number of vertices. */
+    int ns = 6; /* Number of vertices. */
     CGL::Random rng(-10,10); /* "bounding box" for points. "*/
 
     int i = 0;
@@ -73,13 +73,10 @@ int main() {
         int prevVertice = (i-1) % P_size;
         int nextVertice = (i+1) % P_size;
         bool isEar = true;
-        for(size_t j = (i + 2); (j % P_size) < prevVertice; j++){
+        int count = 0;
 
-            if(isInsideTriangle(P[prevVertice],P[actualVertice],P[nextVertice],P[j])){
-                isEar = false;
-                break;
-            }
-        }
+        isEar = isVerticeEar(P[prevVertice],P[actualVertice],P[nextVertice],P);
+
         if(isEar)
             std::cout << "The vertice ("<< P[actualVertice] << ") "<< "is ear"<<std::endl;
         else 
@@ -166,15 +163,19 @@ bool isInsideTriangle(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3, CGL::Point2
     return (orientation1 == orientation2 && orientation2 == orientation3);
 }
 
-bool isVerticeEar(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3, CGL::Point2 point, CGL::Polygon2 P){
+bool isVerticeEar(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3, CGL::Polygon2 P){
     size_t P_size = P.size();
     size_t i = P_size;
+
+    // If vertice is concave, returns false
+    if(!isVerticeConvex(p1,p2,p3,getOrientation(P)))
+        return false;
 
     for (size_t i = 0; i < P_size; i++) {
         if(p1 == P[i] || p2 == P[i] || p3 == P[i]){
             continue;
         }
-        if(isInsideTriangle(p1,p2,p3,point))
+        if(isInsideTriangle(p1,p2,p3,P[i]))
             return false;
     }
     return true;
