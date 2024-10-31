@@ -117,12 +117,12 @@ bool getOrientation(CGL::Polygon2 P){
     size_t P_size = P.size();
     for (size_t i = 0; i < P_size; i++) {
         // % operation for when get to i == P_size - 1, when adds 1 or 2, go to 0 and 1
-        int p0 = i, p1 = ((i+1) % P_size), p2 = ((i+2) % P_size);
-        //If totalSum is positive, is countercw
-        totalSum += ((P[p1].x() - P[p0].x())*(P[p2].y() - P[p0].y()) - (P[p1].y() - P[p0].y())*(P[p2].x() - P[p0].x()));
+        int p0 = i, p1 = ((i+1) % P_size);
+        //If totalSum is positive, is cw
+        totalSum += ((P[p1].x() - P[p0].x()) * (P[p1].y() + P[p0].y()) );
     }
 
-    return (totalSum >= 0);
+    return !(totalSum >= 0);
 }
 
 //This function receives as parameter three points
