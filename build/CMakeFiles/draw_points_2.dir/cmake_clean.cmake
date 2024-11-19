@@ -1,7 +1,10 @@
 file(REMOVE_RECURSE
   "CMakeFiles/draw_points_2.dir/examples/draw_points_2.cpp.o"
+  "CMakeFiles/draw_points_2.dir/examples/draw_points_2.cpp.o.d"
   "CMakeFiles/draw_points_2.dir/src/Draw/DrawPoints2.cpp.o"
+  "CMakeFiles/draw_points_2.dir/src/Draw/DrawPoints2.cpp.o.d"
   "CMakeFiles/draw_points_2.dir/src/Random.cpp.o"
+  "CMakeFiles/draw_points_2.dir/src/Random.cpp.o.d"
   "draw_points_2"
   "draw_points_2.pdb"
 )

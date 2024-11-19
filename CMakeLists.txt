@@ -19,10 +19,6 @@ set(CGL_DRAW_INCLUDE ${CGL_INCLUDE}/Draw)
 # Set examples directory.
 set(CGL_EXAMPLES ${PROJECT_SOURCE_DIR}/examples)
 
-add_executable(atividade1 ${CGL_EXAMPLES}/atividade1.cpp ${CGL_DRAW_SOURCE}/DrawPoints2.cpp ${CGL_SOURCE}/Random.cpp)
-target_include_directories(atividade1 PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
-target_link_libraries(atividade1 PUBLIC CGAL::CGAL_Basic_viewer)
-
 add_executable(draw_points_2 ${CGL_EXAMPLES}/draw_points_2.cpp ${CGL_DRAW_SOURCE}/DrawPoints2.cpp ${CGL_SOURCE}/Random.cpp)
 target_include_directories(draw_points_2 PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
 target_link_libraries(draw_points_2 PUBLIC CGAL::CGAL_Basic_viewer)
@@ -39,3 +35,18 @@ add_executable(draw_polygon_2 ${CGL_EXAMPLES}/draw_polygon_2.cpp ${CGL_SOURCE}/R
 target_include_directories(draw_polygon_2 PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
 target_link_libraries(draw_polygon_2 PUBLIC CGAL::CGAL_Basic_viewer)
 
+add_executable(draw_partition_2 ${CGL_EXAMPLES}/draw_partition_2.cpp ${CGL_SOURCE}/IO.cpp)
+target_include_directories(draw_partition_2 PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
+target_link_libraries(draw_partition_2 PUBLIC CGAL::CGAL_Basic_viewer)
+
+add_executable(halfedge_info ${CGL_EXAMPLES}/halfedge_info ${CGL_SOURCE}/IO.cpp)
+target_include_directories(halfedge_info PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
+target_link_libraries(halfedge_info PUBLIC CGAL::CGAL_Basic_viewer)
+
+add_executable(polygon_2_triangulate ${CGL_EXAMPLES}/polygon_2_triangulate.cpp ${CGL_SOURCE}/IO.cpp ${CGL_SOURCE}/Partition.cpp ${CGL_SOURCE}/Primitives.cpp ${CGL_DRAW_SOURCE}/DrawSegments3.cpp)
+target_include_directories(polygon_2_triangulate PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
+target_link_libraries(polygon_2_triangulate PUBLIC CGAL::CGAL_Basic_viewer)
+
+add_executable(polygon_2_create ${CGL_EXAMPLES}/polygon_2_create.cpp ${CGL_SOURCE}/Random.cpp)
+target_include_directories(polygon_2_create PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
+target_link_libraries(polygon_2_create PUBLIC CGAL::CGAL_Basic_viewer)

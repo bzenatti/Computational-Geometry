@@ -1,7 +1,10 @@
 file(REMOVE_RECURSE
   "CMakeFiles/draw_vectors_3.dir/examples/draw_vectors_3.cpp.o"
+  "CMakeFiles/draw_vectors_3.dir/examples/draw_vectors_3.cpp.o.d"
   "CMakeFiles/draw_vectors_3.dir/src/Draw/DrawVectors3.cpp.o"
+  "CMakeFiles/draw_vectors_3.dir/src/Draw/DrawVectors3.cpp.o.d"
   "CMakeFiles/draw_vectors_3.dir/src/Random.cpp.o"
+  "CMakeFiles/draw_vectors_3.dir/src/Random.cpp.o.d"
   "draw_vectors_3"
   "draw_vectors_3.pdb"
 )
