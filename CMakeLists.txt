@@ -19,6 +19,18 @@ set(CGL_DRAW_INCLUDE ${CGL_INCLUDE}/Draw)
 # Set examples directory.
 set(CGL_EXAMPLES ${PROJECT_SOURCE_DIR}/examples)
 
+add_executable(atividade1 ${CGL_EXAMPLES}/atividade1.cpp ${CGL_DRAW_SOURCE}/DrawPoints2.cpp ${CGL_SOURCE}/Random.cpp)
+target_include_directories(atividade1 PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
+target_link_libraries(atividade1 PUBLIC CGAL::CGAL_Basic_viewer)
+
+add_executable(atividade2 ${CGL_EXAMPLES}/atividade2.cpp ${CGL_DRAW_SOURCE}/DrawPoints2.cpp ${CGL_SOURCE}/Random.cpp)
+target_include_directories(atividade2 PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
+target_link_libraries(atividade2 PUBLIC CGAL::CGAL_Basic_viewer)
+
+add_executable(trabalho1 ${CGL_EXAMPLES}/trabalho1.cpp ${CGL_SOURCE}/IO.cpp ${CGL_SOURCE}/Partition.cpp ${CGL_SOURCE}/Primitives.cpp ${CGL_DRAW_SOURCE}/DrawSegments3.cpp)
+target_include_directories(trabalho1 PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
+target_link_libraries(trabalho1 PUBLIC CGAL::CGAL_Basic_viewer)
+
 add_executable(draw_points_2 ${CGL_EXAMPLES}/draw_points_2.cpp ${CGL_DRAW_SOURCE}/DrawPoints2.cpp ${CGL_SOURCE}/Random.cpp)
 target_include_directories(draw_points_2 PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
 target_link_libraries(draw_points_2 PUBLIC CGAL::CGAL_Basic_viewer)

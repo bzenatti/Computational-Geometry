@@ -35,9 +35,10 @@ int main(int argc, char* argv[])
     CGL::Mesh polygon = CGL::read_mesh(argv[1]);
 
     /* Triangulate polygon. */
-    CGAL::draw(polygon);
+    // CGAL::draw(polygon);
     CGL::polygon_2_triangulate_naive(polygon);    
     CGAL::draw(polygon);
+    CGL::print_mesh(polygon);
 
     return EXIT_SUCCESS;
 }

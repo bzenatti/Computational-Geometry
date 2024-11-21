@@ -130,6 +130,45 @@ CGAL_Qt5_moc_and_resources/fast:
 .PHONY : CGAL_Qt5_moc_and_resources/fast
 
 #=============================================================================
+# Target rules for targets named atividade1
+
+# Build rule for target.
+atividade1: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 atividade1
+.PHONY : atividade1
+
+# fast build rule for target.
+atividade1/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade1.dir/build.make CMakeFiles/atividade1.dir/build
+.PHONY : atividade1/fast
+
+#=============================================================================
+# Target rules for targets named atividade2
+
+# Build rule for target.
+atividade2: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 atividade2
+.PHONY : atividade2
+
+# fast build rule for target.
+atividade2/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade2.dir/build.make CMakeFiles/atividade2.dir/build
+.PHONY : atividade2/fast
+
+#=============================================================================
+# Target rules for targets named trabalho1
+
+# Build rule for target.
+trabalho1: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 trabalho1
+.PHONY : trabalho1
+
+# fast build rule for target.
+trabalho1/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/trabalho1.dir/build.make CMakeFiles/trabalho1.dir/build
+.PHONY : trabalho1/fast
+
+#=============================================================================
 # Target rules for targets named draw_points_2
 
 # Build rule for target.
@@ -269,6 +308,54 @@ CGAL_Qt5_moc_and_resources_autogen/mocs_compilation.s: CGAL_Qt5_moc_and_resource
 CGAL_Qt5_moc_and_resources_autogen/mocs_compilation.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/CGAL_Qt5_moc_and_resources.dir/build.make CMakeFiles/CGAL_Qt5_moc_and_resources.dir/CGAL_Qt5_moc_and_resources_autogen/mocs_compilation.cpp.s
 .PHONY : CGAL_Qt5_moc_and_resources_autogen/mocs_compilation.cpp.s
+
+examples/atividade1.o: examples/atividade1.cpp.o
+.PHONY : examples/atividade1.o
+
+# target to build an object file
+examples/atividade1.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade1.dir/build.make CMakeFiles/atividade1.dir/examples/atividade1.cpp.o
+.PHONY : examples/atividade1.cpp.o
+
+examples/atividade1.i: examples/atividade1.cpp.i
+.PHONY : examples/atividade1.i
+
+# target to preprocess a source file
+examples/atividade1.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade1.dir/build.make CMakeFiles/atividade1.dir/examples/atividade1.cpp.i
+.PHONY : examples/atividade1.cpp.i
+
+examples/atividade1.s: examples/atividade1.cpp.s
+.PHONY : examples/atividade1.s
+
+# target to generate assembly for a file
+examples/atividade1.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade1.dir/build.make CMakeFiles/atividade1.dir/examples/atividade1.cpp.s
+.PHONY : examples/atividade1.cpp.s
+
+examples/atividade2.o: examples/atividade2.cpp.o
+.PHONY : examples/atividade2.o
+
+# target to build an object file
+examples/atividade2.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade2.dir/build.make CMakeFiles/atividade2.dir/examples/atividade2.cpp.o
+.PHONY : examples/atividade2.cpp.o
+
+examples/atividade2.i: examples/atividade2.cpp.i
+.PHONY : examples/atividade2.i
+
+# target to preprocess a source file
+examples/atividade2.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade2.dir/build.make CMakeFiles/atividade2.dir/examples/atividade2.cpp.i
+.PHONY : examples/atividade2.cpp.i
+
+examples/atividade2.s: examples/atividade2.cpp.s
+.PHONY : examples/atividade2.s
+
+# target to generate assembly for a file
+examples/atividade2.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade2.dir/build.make CMakeFiles/atividade2.dir/examples/atividade2.cpp.s
+.PHONY : examples/atividade2.cpp.s
 
 examples/draw_partition_2.o: examples/draw_partition_2.cpp.o
 .PHONY : examples/draw_partition_2.o
@@ -462,6 +549,30 @@ examples/polygon_2_triangulate.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/polygon_2_triangulate.dir/build.make CMakeFiles/polygon_2_triangulate.dir/examples/polygon_2_triangulate.cpp.s
 .PHONY : examples/polygon_2_triangulate.cpp.s
 
+examples/trabalho1.o: examples/trabalho1.cpp.o
+.PHONY : examples/trabalho1.o
+
+# target to build an object file
+examples/trabalho1.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/trabalho1.dir/build.make CMakeFiles/trabalho1.dir/examples/trabalho1.cpp.o
+.PHONY : examples/trabalho1.cpp.o
+
+examples/trabalho1.i: examples/trabalho1.cpp.i
+.PHONY : examples/trabalho1.i
+
+# target to preprocess a source file
+examples/trabalho1.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/trabalho1.dir/build.make CMakeFiles/trabalho1.dir/examples/trabalho1.cpp.i
+.PHONY : examples/trabalho1.cpp.i
+
+examples/trabalho1.s: examples/trabalho1.cpp.s
+.PHONY : examples/trabalho1.s
+
+# target to generate assembly for a file
+examples/trabalho1.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/trabalho1.dir/build.make CMakeFiles/trabalho1.dir/examples/trabalho1.cpp.s
+.PHONY : examples/trabalho1.cpp.s
+
 qrc_CGAL.o: qrc_CGAL.cpp.o
 .PHONY : qrc_CGAL.o
 
@@ -563,6 +674,8 @@ src/Draw/DrawPoints2.o: src/Draw/DrawPoints2.cpp.o
 
 # target to build an object file
 src/Draw/DrawPoints2.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade1.dir/build.make CMakeFiles/atividade1.dir/src/Draw/DrawPoints2.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade2.dir/build.make CMakeFiles/atividade2.dir/src/Draw/DrawPoints2.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/draw_points_2.dir/build.make CMakeFiles/draw_points_2.dir/src/Draw/DrawPoints2.cpp.o
 .PHONY : src/Draw/DrawPoints2.cpp.o
 
@@ -571,6 +684,8 @@ src/Draw/DrawPoints2.i: src/Draw/DrawPoints2.cpp.i
 
 # target to preprocess a source file
 src/Draw/DrawPoints2.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade1.dir/build.make CMakeFiles/atividade1.dir/src/Draw/DrawPoints2.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade2.dir/build.make CMakeFiles/atividade2.dir/src/Draw/DrawPoints2.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/draw_points_2.dir/build.make CMakeFiles/draw_points_2.dir/src/Draw/DrawPoints2.cpp.i
 .PHONY : src/Draw/DrawPoints2.cpp.i
 
@@ -579,6 +694,8 @@ src/Draw/DrawPoints2.s: src/Draw/DrawPoints2.cpp.s
 
 # target to generate assembly for a file
 src/Draw/DrawPoints2.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade1.dir/build.make CMakeFiles/atividade1.dir/src/Draw/DrawPoints2.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade2.dir/build.make CMakeFiles/atividade2.dir/src/Draw/DrawPoints2.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/draw_points_2.dir/build.make CMakeFiles/draw_points_2.dir/src/Draw/DrawPoints2.cpp.s
 .PHONY : src/Draw/DrawPoints2.cpp.s
 
@@ -587,6 +704,7 @@ src/Draw/DrawSegments3.o: src/Draw/DrawSegments3.cpp.o
 
 # target to build an object file
 src/Draw/DrawSegments3.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/trabalho1.dir/build.make CMakeFiles/trabalho1.dir/src/Draw/DrawSegments3.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/draw_segments_3.dir/build.make CMakeFiles/draw_segments_3.dir/src/Draw/DrawSegments3.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/polygon_2_triangulate.dir/build.make CMakeFiles/polygon_2_triangulate.dir/src/Draw/DrawSegments3.cpp.o
 .PHONY : src/Draw/DrawSegments3.cpp.o
@@ -596,6 +714,7 @@ src/Draw/DrawSegments3.i: src/Draw/DrawSegments3.cpp.i
 
 # target to preprocess a source file
 src/Draw/DrawSegments3.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/trabalho1.dir/build.make CMakeFiles/trabalho1.dir/src/Draw/DrawSegments3.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/draw_segments_3.dir/build.make CMakeFiles/draw_segments_3.dir/src/Draw/DrawSegments3.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/polygon_2_triangulate.dir/build.make CMakeFiles/polygon_2_triangulate.dir/src/Draw/DrawSegments3.cpp.i
 .PHONY : src/Draw/DrawSegments3.cpp.i
@@ -605,6 +724,7 @@ src/Draw/DrawSegments3.s: src/Draw/DrawSegments3.cpp.s
 
 # target to generate assembly for a file
 src/Draw/DrawSegments3.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/trabalho1.dir/build.make CMakeFiles/trabalho1.dir/src/Draw/DrawSegments3.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/draw_segments_3.dir/build.make CMakeFiles/draw_segments_3.dir/src/Draw/DrawSegments3.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/polygon_2_triangulate.dir/build.make CMakeFiles/polygon_2_triangulate.dir/src/Draw/DrawSegments3.cpp.s
 .PHONY : src/Draw/DrawSegments3.cpp.s
@@ -638,6 +758,7 @@ src/IO.o: src/IO.cpp.o
 
 # target to build an object file
 src/IO.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/trabalho1.dir/build.make CMakeFiles/trabalho1.dir/src/IO.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/draw_partition_2.dir/build.make CMakeFiles/draw_partition_2.dir/src/IO.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/halfedge_info.dir/build.make CMakeFiles/halfedge_info.dir/src/IO.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/polygon_2_triangulate.dir/build.make CMakeFiles/polygon_2_triangulate.dir/src/IO.cpp.o
@@ -648,6 +769,7 @@ src/IO.i: src/IO.cpp.i
 
 # target to preprocess a source file
 src/IO.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/trabalho1.dir/build.make CMakeFiles/trabalho1.dir/src/IO.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/draw_partition_2.dir/build.make CMakeFiles/draw_partition_2.dir/src/IO.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/halfedge_info.dir/build.make CMakeFiles/halfedge_info.dir/src/IO.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/polygon_2_triangulate.dir/build.make CMakeFiles/polygon_2_triangulate.dir/src/IO.cpp.i
@@ -658,6 +780,7 @@ src/IO.s: src/IO.cpp.s
 
 # target to generate assembly for a file
 src/IO.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/trabalho1.dir/build.make CMakeFiles/trabalho1.dir/src/IO.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/draw_partition_2.dir/build.make CMakeFiles/draw_partition_2.dir/src/IO.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/halfedge_info.dir/build.make CMakeFiles/halfedge_info.dir/src/IO.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/polygon_2_triangulate.dir/build.make CMakeFiles/polygon_2_triangulate.dir/src/IO.cpp.s
@@ -668,6 +791,7 @@ src/Partition.o: src/Partition.cpp.o
 
 # target to build an object file
 src/Partition.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/trabalho1.dir/build.make CMakeFiles/trabalho1.dir/src/Partition.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/polygon_2_triangulate.dir/build.make CMakeFiles/polygon_2_triangulate.dir/src/Partition.cpp.o
 .PHONY : src/Partition.cpp.o
 
@@ -676,6 +800,7 @@ src/Partition.i: src/Partition.cpp.i
 
 # target to preprocess a source file
 src/Partition.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/trabalho1.dir/build.make CMakeFiles/trabalho1.dir/src/Partition.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/polygon_2_triangulate.dir/build.make CMakeFiles/polygon_2_triangulate.dir/src/Partition.cpp.i
 .PHONY : src/Partition.cpp.i
 
@@ -684,6 +809,7 @@ src/Partition.s: src/Partition.cpp.s
 
 # target to generate assembly for a file
 src/Partition.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/trabalho1.dir/build.make CMakeFiles/trabalho1.dir/src/Partition.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/polygon_2_triangulate.dir/build.make CMakeFiles/polygon_2_triangulate.dir/src/Partition.cpp.s
 .PHONY : src/Partition.cpp.s
 
@@ -692,6 +818,7 @@ src/Primitives.o: src/Primitives.cpp.o
 
 # target to build an object file
 src/Primitives.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/trabalho1.dir/build.make CMakeFiles/trabalho1.dir/src/Primitives.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/polygon_2_triangulate.dir/build.make CMakeFiles/polygon_2_triangulate.dir/src/Primitives.cpp.o
 .PHONY : src/Primitives.cpp.o
 
@@ -700,6 +827,7 @@ src/Primitives.i: src/Primitives.cpp.i
 
 # target to preprocess a source file
 src/Primitives.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/trabalho1.dir/build.make CMakeFiles/trabalho1.dir/src/Primitives.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/polygon_2_triangulate.dir/build.make CMakeFiles/polygon_2_triangulate.dir/src/Primitives.cpp.i
 .PHONY : src/Primitives.cpp.i
 
@@ -708,6 +836,7 @@ src/Primitives.s: src/Primitives.cpp.s
 
 # target to generate assembly for a file
 src/Primitives.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/trabalho1.dir/build.make CMakeFiles/trabalho1.dir/src/Primitives.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/polygon_2_triangulate.dir/build.make CMakeFiles/polygon_2_triangulate.dir/src/Primitives.cpp.s
 .PHONY : src/Primitives.cpp.s
 
@@ -716,6 +845,8 @@ src/Random.o: src/Random.cpp.o
 
 # target to build an object file
 src/Random.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade1.dir/build.make CMakeFiles/atividade1.dir/src/Random.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade2.dir/build.make CMakeFiles/atividade2.dir/src/Random.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/draw_points_2.dir/build.make CMakeFiles/draw_points_2.dir/src/Random.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/draw_vectors_3.dir/build.make CMakeFiles/draw_vectors_3.dir/src/Random.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/draw_segments_3.dir/build.make CMakeFiles/draw_segments_3.dir/src/Random.cpp.o
@@ -728,6 +859,8 @@ src/Random.i: src/Random.cpp.i
 
 # target to preprocess a source file
 src/Random.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade1.dir/build.make CMakeFiles/atividade1.dir/src/Random.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade2.dir/build.make CMakeFiles/atividade2.dir/src/Random.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/draw_points_2.dir/build.make CMakeFiles/draw_points_2.dir/src/Random.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/draw_vectors_3.dir/build.make CMakeFiles/draw_vectors_3.dir/src/Random.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/draw_segments_3.dir/build.make CMakeFiles/draw_segments_3.dir/src/Random.cpp.i
@@ -740,6 +873,8 @@ src/Random.s: src/Random.cpp.s
 
 # target to generate assembly for a file
 src/Random.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade1.dir/build.make CMakeFiles/atividade1.dir/src/Random.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/atividade2.dir/build.make CMakeFiles/atividade2.dir/src/Random.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/draw_points_2.dir/build.make CMakeFiles/draw_points_2.dir/src/Random.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/draw_vectors_3.dir/build.make CMakeFiles/draw_vectors_3.dir/src/Random.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/draw_segments_3.dir/build.make CMakeFiles/draw_segments_3.dir/src/Random.cpp.s
@@ -757,6 +892,8 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... CGAL_Qt5_moc_and_resources_autogen"
 	@echo "... CGAL_Qt5_moc_and_resources"
+	@echo "... atividade1"
+	@echo "... atividade2"
 	@echo "... draw_partition_2"
 	@echo "... draw_points_2"
 	@echo "... draw_polygon_2"
@@ -765,9 +902,16 @@ help:
 	@echo "... halfedge_info"
 	@echo "... polygon_2_create"
 	@echo "... polygon_2_triangulate"
+	@echo "... trabalho1"
 	@echo "... CGAL_Qt5_moc_and_resources_autogen/mocs_compilation.o"
 	@echo "... CGAL_Qt5_moc_and_resources_autogen/mocs_compilation.i"
 	@echo "... CGAL_Qt5_moc_and_resources_autogen/mocs_compilation.s"
+	@echo "... examples/atividade1.o"
+	@echo "... examples/atividade1.i"
+	@echo "... examples/atividade1.s"
+	@echo "... examples/atividade2.o"
+	@echo "... examples/atividade2.i"
+	@echo "... examples/atividade2.s"
 	@echo "... examples/draw_partition_2.o"
 	@echo "... examples/draw_partition_2.i"
 	@echo "... examples/draw_partition_2.s"
@@ -792,6 +936,9 @@ help:
 	@echo "... examples/polygon_2_triangulate.o"
 	@echo "... examples/polygon_2_triangulate.i"
 	@echo "... examples/polygon_2_triangulate.s"
+	@echo "... examples/trabalho1.o"
+	@echo "... examples/trabalho1.i"
+	@echo "... examples/trabalho1.s"
 	@echo "... qrc_CGAL.o"
 	@echo "... qrc_CGAL.i"
 	@echo "... qrc_CGAL.s"

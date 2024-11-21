@@ -1,4 +1,7 @@
 /home/brunopc/Desktop/estudos/Computational-Geometry/build/CMakeFiles/CGAL_Qt5_moc_and_resources.dir
+/home/brunopc/Desktop/estudos/Computational-Geometry/build/CMakeFiles/atividade1.dir
+/home/brunopc/Desktop/estudos/Computational-Geometry/build/CMakeFiles/atividade2.dir
+/home/brunopc/Desktop/estudos/Computational-Geometry/build/CMakeFiles/trabalho1.dir
 /home/brunopc/Desktop/estudos/Computational-Geometry/build/CMakeFiles/draw_points_2.dir
 /home/brunopc/Desktop/estudos/Computational-Geometry/build/CMakeFiles/draw_vectors_3.dir
 /home/brunopc/Desktop/estudos/Computational-Geometry/build/CMakeFiles/draw_segments_3.dir
