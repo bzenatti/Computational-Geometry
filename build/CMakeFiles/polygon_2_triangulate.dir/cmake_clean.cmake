@@ -1,14 +1,9 @@
 file(REMOVE_RECURSE
   "CMakeFiles/polygon_2_triangulate.dir/examples/polygon_2_triangulate.cpp.o"
-  "CMakeFiles/polygon_2_triangulate.dir/examples/polygon_2_triangulate.cpp.o.d"
   "CMakeFiles/polygon_2_triangulate.dir/src/Draw/DrawSegments3.cpp.o"
-  "CMakeFiles/polygon_2_triangulate.dir/src/Draw/DrawSegments3.cpp.o.d"
   "CMakeFiles/polygon_2_triangulate.dir/src/IO.cpp.o"
-  "CMakeFiles/polygon_2_triangulate.dir/src/IO.cpp.o.d"
   "CMakeFiles/polygon_2_triangulate.dir/src/Partition.cpp.o"
-  "CMakeFiles/polygon_2_triangulate.dir/src/Partition.cpp.o.d"
   "CMakeFiles/polygon_2_triangulate.dir/src/Primitives.cpp.o"
-  "CMakeFiles/polygon_2_triangulate.dir/src/Primitives.cpp.o.d"
   "polygon_2_triangulate"
   "polygon_2_triangulate.pdb"
 )

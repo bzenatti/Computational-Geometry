@@ -1,0 +1,40 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../include/IO.h
+Types.h
+-
+CGAL/Polygon_mesh_processing/IO/polygon_mesh_io.h
+-
+
+../include/Types.h
+CGAL/Simple_cartesian.h
+-
+CGAL/Polygon_2.h
+-
+CGAL/Surface_mesh.h
+-
+
+/home/brunoz/Desktop/estudos/Computational-Geometry/examples/draw_partition_2.cpp
+Types.h
+-
+IO.h
+-
+CGAL/draw_surface_mesh.h
+-
+iostream
+-
+stdlib.h
+-
+vector
+-
+
+/home/brunoz/Desktop/estudos/Computational-Geometry/src/IO.cpp
+IO.h
+-
+

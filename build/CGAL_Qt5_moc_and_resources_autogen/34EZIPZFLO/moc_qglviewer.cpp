@@ -1,19 +1,18 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'qglviewer.h'
 **
-** Created by: The Qt Meta Object Compiler version 67 (Qt 5.15.3)
+** Created by: The Qt Meta Object Compiler version 67 (Qt 5.12.8)
 **
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
 
-#include <memory>
-#include "../../../../../../../../usr/local/include/CGAL/Qt/qglviewer.h"
+#include "CGAL/Qt/qglviewer.h"
 #include <QtCore/qbytearray.h>
 #include <QtCore/qmetatype.h>
 #if !defined(Q_MOC_OUTPUT_REVISION)
 #error "The header file 'qglviewer.h' doesn't include <QObject>."
 #elif Q_MOC_OUTPUT_REVISION != 67
-#error "This file was generated using the moc from 5.15.3. It"
+#error "This file was generated using the moc from 5.12.8. It"
 #error "cannot be used with the include files from this version of Qt."
 #error "(The moc has changed too much.)"
 #endif
@@ -413,7 +412,7 @@ void CGAL::QGLViewer::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int 
 {
     if (_c == QMetaObject::InvokeMetaMethod) {
         auto *_t = static_cast<QGLViewer *>(_o);
-        (void)_t;
+        Q_UNUSED(_t)
         switch (_id) {
         case 0: _t->viewerInitialized(); break;
         case 1: _t->drawNeeded(); break;
@@ -612,7 +611,7 @@ void CGAL::QGLViewer::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int 
 }
 
 QT_INIT_METAOBJECT const QMetaObject CGAL::QGLViewer::staticMetaObject = { {
-    QMetaObject::SuperData::link<QOpenGLWidget::staticMetaObject>(),
+    &QOpenGLWidget::staticMetaObject,
     qt_meta_stringdata_CGAL__QGLViewer.data,
     qt_meta_data_CGAL__QGLViewer,
     qt_static_metacall,
@@ -668,7 +667,7 @@ void CGAL::QGLViewer::drawNeeded()
 // SIGNAL 2
 void CGAL::QGLViewer::drawFinished(bool _t1)
 {
-    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(&_t1)) };
     QMetaObject::activate(this, &staticMetaObject, 2, _a);
 }
 
@@ -687,49 +686,49 @@ void CGAL::QGLViewer::helpRequired()
 // SIGNAL 5
 void CGAL::QGLViewer::axisIsDrawnChanged(bool _t1)
 {
-    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(&_t1)) };
     QMetaObject::activate(this, &staticMetaObject, 5, _a);
 }
 
 // SIGNAL 6
 void CGAL::QGLViewer::gridIsDrawnChanged(bool _t1)
 {
-    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(&_t1)) };
     QMetaObject::activate(this, &staticMetaObject, 6, _a);
 }
 
 // SIGNAL 7
 void CGAL::QGLViewer::FPSIsDisplayedChanged(bool _t1)
 {
-    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(&_t1)) };
     QMetaObject::activate(this, &staticMetaObject, 7, _a);
 }
 
 // SIGNAL 8
 void CGAL::QGLViewer::textIsEnabledChanged(bool _t1)
 {
-    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(&_t1)) };
     QMetaObject::activate(this, &staticMetaObject, 8, _a);
 }
 
 // SIGNAL 9
 void CGAL::QGLViewer::cameraIsEditedChanged(bool _t1)
 {
-    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(&_t1)) };
     QMetaObject::activate(this, &staticMetaObject, 9, _a);
 }
 
 // SIGNAL 10
 void CGAL::QGLViewer::pointSelected(const QMouseEvent * _t1)
 {
-    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(&_t1)) };
     QMetaObject::activate(this, &staticMetaObject, 10, _a);
 }
 
 // SIGNAL 11
 void CGAL::QGLViewer::mouseGrabberChanged(qglviewer::MouseGrabber * _t1)
 {
-    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(&_t1)) };
     QMetaObject::activate(this, &staticMetaObject, 11, _a);
 }
 
