@@ -200,14 +200,20 @@ bool isVerticeEar(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3, CGL::Polygon2 P
 
 double triangle_goodness (CGL::Point3 p0, CGL::Point3 p1, CGL::Point3 p2){
     double scale = 0;
-    double angle0 = angleBetween(p0,p1,p0,p2);
-    double angle1 = angleBetween(p1,p0,p1,p2);
-    double angle2 = angleBetween(p2,p0,p2,p1);
+    double angle0 = angleBetween(p0,p1,p0,p2) * 180/PI;
+    double angle1 = angleBetween(p1,p0,p1,p2) * 180/PI;
+    double angle2 = angleBetween(p2,p0,p2,p1) * 180/PI;
 
-
+    double std_deviation = std::sqrt((angle0 - 60)*(angle0 - 60) + (angle1 - 60)*(angle1 - 60)+(angle0 - 60)*(angle0 - 60)) / 3;
     // double mean = (angle0 + angle1 + angle2)/3;
     // mean *= 180/PI;
-    // printf("This should be 60 %f\n", mean);
+    printf("This should be, ideally, 0. \t %f  ", std_deviation);
+
+    // Considering that for std deviation 0 is ideal and 60 is horrible, 0 returns 1 and 60 returns 0
+    // Scale of 0-1 of goodness:
+    scale = 1 - (std_deviation / 60);
+
+    printf("Scale of goodness %f \n", scale);
 
     return scale;
 }
