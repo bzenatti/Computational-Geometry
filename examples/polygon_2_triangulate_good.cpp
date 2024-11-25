@@ -10,6 +10,8 @@
 #include <Partition.h>
 #include <IO.h>
 
+#define PI 3.14159265358979323846
+
 // Computational Geometry project - Bruno Emanuel Zenatti
 
 float getDeterminant(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3);
@@ -96,7 +98,7 @@ int main(int argc, char* argv[]) {
             pts[j] = polygon.point(triangle[j]);
         }
 
-        goodness_vec[i] = triangle_goodness(pts[0],pts[1],pts[2]);
+        goodness_vec.push_back(triangle_goodness(pts[0],pts[1],pts[2]));
     }
 
 
@@ -149,7 +151,7 @@ double dotProduct(CGL::Point3 p1, CGL::Point3 p2,CGL::Point3 p3,CGL::Point3 p4) 
     int ux = p2.x() - p1.x(), uy = p2.y() - p1.y();
     int vx = p4.x() - p3.x(), vy = p4.y() - p3.y();
 
-    return (ux*vx) + (uy+vy);
+    return (ux*vx) + (uy*vy);
 }
 
 double vectorMagnitude(CGL::Point3 p1, CGL::Point3 p2){
@@ -201,9 +203,11 @@ double triangle_goodness (CGL::Point3 p0, CGL::Point3 p1, CGL::Point3 p2){
     double angle0 = angleBetween(p0,p1,p0,p2);
     double angle1 = angleBetween(p1,p0,p1,p2);
     double angle2 = angleBetween(p2,p0,p2,p1);
-    double mean = (angle0 + angle1 + angle2)/3;
 
-    printf("This should be 60 %f", mean);
+
+    // double mean = (angle0 + angle1 + angle2)/3;
+    // mean *= 180/PI;
+    // printf("This should be 60 %f\n", mean);
 
     return scale;
 }

@@ -1,6 +1,8 @@
 file(REMOVE_RECURSE
   "CMakeFiles/halfedge_info.dir/examples/halfedge_info.cpp.o"
+  "CMakeFiles/halfedge_info.dir/examples/halfedge_info.cpp.o.d"
   "CMakeFiles/halfedge_info.dir/src/IO.cpp.o"
+  "CMakeFiles/halfedge_info.dir/src/IO.cpp.o.d"
   "halfedge_info"
   "halfedge_info.pdb"
 )

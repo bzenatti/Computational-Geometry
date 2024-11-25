@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'ImageInterface.ui'
 **
-** Created by: Qt User Interface Compiler version 5.12.8
+** Created by: Qt User Interface Compiler version 5.15.3
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -171,33 +171,33 @@ public:
 
     void retranslateUi(QDialog *ImageInterface)
     {
-        ImageInterface->setWindowTitle(QApplication::translate("ImageInterface", "Image Settings", nullptr));
-#ifndef QT_NO_TOOLTIP
-        imgHeight->setToolTip(QApplication::translate("ImageInterface", "Height of the image (in pixels)", nullptr));
-#endif // QT_NO_TOOLTIP
-        imgHeight->setSuffix(QApplication::translate("ImageInterface", " px", nullptr));
-#ifndef QT_NO_TOOLTIP
-        imgWidth->setToolTip(QApplication::translate("ImageInterface", "Width of the image (in pixels)", nullptr));
-#endif // QT_NO_TOOLTIP
-        imgWidth->setSuffix(QApplication::translate("ImageInterface", " px", nullptr));
-        label_2->setText(QApplication::translate("ImageInterface", "Width", nullptr));
-        label_3->setText(QApplication::translate("ImageInterface", "Height", nullptr));
-        ratioCheckBox->setText(QApplication::translate("ImageInterface", "Keep Ratio", nullptr));
-        label->setText(QApplication::translate("ImageInterface", "Oversampling", nullptr));
-#ifndef QT_NO_TOOLTIP
-        oversampling->setToolTip(QApplication::translate("ImageInterface", "Antialiases image (when larger then 1.0)", nullptr));
-#endif // QT_NO_TOOLTIP
-        oversampling->setPrefix(QApplication::translate("ImageInterface", "x ", nullptr));
-        color_comboBox->setItemText(0, QApplication::translate("ImageInterface", "Use current background color", nullptr));
-        color_comboBox->setItemText(1, QApplication::translate("ImageInterface", "Use transparent background", nullptr));
-        color_comboBox->setItemText(2, QApplication::translate("ImageInterface", "Choose background color", nullptr));
+        ImageInterface->setWindowTitle(QCoreApplication::translate("ImageInterface", "Image Settings", nullptr));
+#if QT_CONFIG(tooltip)
+        imgHeight->setToolTip(QCoreApplication::translate("ImageInterface", "Height of the image (in pixels)", nullptr));
+#endif // QT_CONFIG(tooltip)
+        imgHeight->setSuffix(QCoreApplication::translate("ImageInterface", " px", nullptr));
+#if QT_CONFIG(tooltip)
+        imgWidth->setToolTip(QCoreApplication::translate("ImageInterface", "Width of the image (in pixels)", nullptr));
+#endif // QT_CONFIG(tooltip)
+        imgWidth->setSuffix(QCoreApplication::translate("ImageInterface", " px", nullptr));
+        label_2->setText(QCoreApplication::translate("ImageInterface", "Width", nullptr));
+        label_3->setText(QCoreApplication::translate("ImageInterface", "Height", nullptr));
+        ratioCheckBox->setText(QCoreApplication::translate("ImageInterface", "Keep Ratio", nullptr));
+        label->setText(QCoreApplication::translate("ImageInterface", "Oversampling", nullptr));
+#if QT_CONFIG(tooltip)
+        oversampling->setToolTip(QCoreApplication::translate("ImageInterface", "Antialiases image (when larger then 1.0)", nullptr));
+#endif // QT_CONFIG(tooltip)
+        oversampling->setPrefix(QCoreApplication::translate("ImageInterface", "x ", nullptr));
+        color_comboBox->setItemText(0, QCoreApplication::translate("ImageInterface", "Use current background color", nullptr));
+        color_comboBox->setItemText(1, QCoreApplication::translate("ImageInterface", "Use transparent background", nullptr));
+        color_comboBox->setItemText(2, QCoreApplication::translate("ImageInterface", "Choose background color", nullptr));
 
-#ifndef QT_NO_TOOLTIP
-        expandFrustum->setToolTip(QApplication::translate("ImageInterface", "When image aspect ratio differs from viewer's one, expand frustum as needed. Fits inside current frustum otherwise.", nullptr));
-#endif // QT_NO_TOOLTIP
-        expandFrustum->setText(QApplication::translate("ImageInterface", "Expand Frustum if Needed", nullptr));
-        okButton->setText(QApplication::translate("ImageInterface", "OK", nullptr));
-        cancelButton->setText(QApplication::translate("ImageInterface", "Cancel", nullptr));
+#if QT_CONFIG(tooltip)
+        expandFrustum->setToolTip(QCoreApplication::translate("ImageInterface", "When image aspect ratio differs from viewer's one, expand frustum as needed. Fits inside current frustum otherwise.", nullptr));
+#endif // QT_CONFIG(tooltip)
+        expandFrustum->setText(QCoreApplication::translate("ImageInterface", "Expand Frustum if Needed", nullptr));
+        okButton->setText(QCoreApplication::translate("ImageInterface", "OK", nullptr));
+        cancelButton->setText(QCoreApplication::translate("ImageInterface", "Cancel", nullptr));
     } // retranslateUi
 
 };

@@ -1,18 +1,19 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'DemosMainWindow.h'
 **
-** Created by: The Qt Meta Object Compiler version 67 (Qt 5.12.8)
+** Created by: The Qt Meta Object Compiler version 67 (Qt 5.15.3)
 **
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
 
-#include "CGAL/Qt/DemosMainWindow.h"
+#include <memory>
+#include "../../../../../../../../usr/local/include/CGAL/Qt/DemosMainWindow.h"
 #include <QtCore/qbytearray.h>
 #include <QtCore/qmetatype.h>
 #if !defined(Q_MOC_OUTPUT_REVISION)
 #error "The header file 'DemosMainWindow.h' doesn't include <QObject>."
 #elif Q_MOC_OUTPUT_REVISION != 67
-#error "This file was generated using the moc from 5.12.8. It"
+#error "This file was generated using the moc from 5.15.3. It"
 #error "cannot be used with the include files from this version of Qt."
 #error "(The moc has changed too much.)"
 #endif
@@ -105,7 +106,7 @@ void CGAL::Qt::DemosMainWindow::qt_static_metacall(QObject *_o, QMetaObject::Cal
 {
     if (_c == QMetaObject::InvokeMetaMethod) {
         auto *_t = static_cast<DemosMainWindow *>(_o);
-        Q_UNUSED(_t)
+        (void)_t;
         switch (_id) {
         case 0: _t->openRecentFile((*reinterpret_cast< QString(*)>(_a[1]))); break;
         case 1: _t->setMaxNumberOfRecentFiles((*reinterpret_cast< const uint(*)>(_a[1]))); break;
@@ -132,7 +133,7 @@ void CGAL::Qt::DemosMainWindow::qt_static_metacall(QObject *_o, QMetaObject::Cal
 }
 
 QT_INIT_METAOBJECT const QMetaObject CGAL::Qt::DemosMainWindow::staticMetaObject = { {
-    &QMainWindow::staticMetaObject,
+    QMetaObject::SuperData::link<QMainWindow::staticMetaObject>(),
     qt_meta_stringdata_CGAL__Qt__DemosMainWindow.data,
     qt_meta_data_CGAL__Qt__DemosMainWindow,
     qt_static_metacall,
@@ -174,7 +175,7 @@ int CGAL::Qt::DemosMainWindow::qt_metacall(QMetaObject::Call _c, int _id, void *
 // SIGNAL 0
 void CGAL::Qt::DemosMainWindow::openRecentFile(QString _t1)
 {
-    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(&_t1)) };
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
     QMetaObject::activate(this, &staticMetaObject, 0, _a);
 }
 QT_WARNING_POP
