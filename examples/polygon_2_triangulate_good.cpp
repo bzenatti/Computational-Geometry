@@ -46,8 +46,11 @@ int main(int argc, char* argv[]) {
     CGL::Mesh original_polygon = CGL::read_mesh(argv[1]);
 
     CGL::Mesh polygon = original_polygon;
-
+    
     CGL::polygon_2_triangulate_naive(polygon);   //triangulates polygon received as input
+    original_polygon = polygon;
+    double naive_goodness = 0;
+    double good_goodness = 0;
 
     //CGL::print_mesh(polygon);
 
@@ -56,7 +59,6 @@ int main(int argc, char* argv[]) {
         To do this, we identify all triangles within the polygon by traversing its faces, as each face represents a triangle.
     */
     
-
     std::vector<std::vector<CGL::Mesh::Vertex_index>> polygon_triangles;
 
     // This main loop looks into all faces
@@ -65,65 +67,87 @@ int main(int argc, char* argv[]) {
         std::vector<CGL::Mesh::Vertex_index> triangle_vertices = get_face_vertices(f,polygon);
 
         polygon_triangles.push_back(triangle_vertices);
-
-        /*
-            Important to know that the outer face is -1
-        */
     }
 
     for (CGL::Mesh::Face_index f : polygon.faces()) {
         std::vector<CGL::Mesh::Vertex_index> triangle = get_face_vertices(f,polygon);
         double goodness = triangle_goodness(polygon.point(triangle[0]),polygon.point(triangle[1]),polygon.point(triangle[2]));
         printf("Goodness of triangle of face_idx %u = %f\n", f.idx(), goodness);
+        naive_goodness += goodness;
     }
+    //for (CGL::Mesh::Face_index f : polygon.faces())
 
     for (CGL::Mesh::Face_index f : polygon.faces()) {
         // This loop is for verifying the three adjacent triangles
-        for(int i = 0;i < 3;i++){
-            CGL::Mesh::Halfedge_index first_hedge = polygon.halfedge(f);
-            double total_goodness_1 = 0;
-            double total_goodness_2 = 0;
+        //for(int i = 0;i < 3;i++){
+            CGL::Mesh::Halfedge_index initial_hedge = polygon.halfedge(f);
 
             // If the face of the twin is the outer one, skip it
-            if(polygon.face(polygon.opposite(first_hedge)).idx() == -1)
+            if(polygon.face(polygon.opposite(initial_hedge)).idx() == -1)
                 continue;
 
-            std::vector<CGL::Mesh::Vertex_index> actual_triangle = get_face_vertices(f,polygon);
-            std::vector<CGL::Mesh::Vertex_index> adjacent_triangle = get_face_vertices(polygon.face(polygon.opposite(first_hedge)),polygon);
+            CGL::Mesh::Halfedge_index first_triagle_hedge = polygon.next(initial_hedge);
+            CGL::Mesh::Halfedge_index adjacent_triangle_hedge = polygon.next(polygon.opposite(initial_hedge));
 
-            double x1 = triangle_goodness(polygon.point(actual_triangle[0]),polygon.point(actual_triangle[1]),polygon.point(actual_triangle[2]));
-            double x2 = triangle_goodness(polygon.point(adjacent_triangle[0]),polygon.point(adjacent_triangle[1]),polygon.point(adjacent_triangle[2]));
-            total_goodness_1 = x1 + x2;
+            std::vector<CGL::Mesh::Vertex_index> actual_triangle_vertices = get_face_vertices(f,polygon);
+            std::vector<CGL::Mesh::Vertex_index> adjacent_triangle_vertices = get_face_vertices(polygon.face(adjacent_triangle_hedge),polygon);
 
-            CGL::Point3 actual_ext_point;
-            CGL::Point3 adjacent_ext_point;
+            double x1 = triangle_goodness(polygon.point(actual_triangle_vertices[0]),polygon.point(actual_triangle_vertices[1]),polygon.point(actual_triangle_vertices[2]));
+            double x2 = triangle_goodness(polygon.point(adjacent_triangle_vertices[0]),polygon.point(adjacent_triangle_vertices[1]),polygon.point(adjacent_triangle_vertices[2]));
+            double total_goodness_1 = x1 + x2;
 
-            // gets all points of quadrilateral (externals of both triangles)
-            for(int j = 0;j < 3;j++) {
-                if(polygon.source(first_hedge) != actual_triangle[j] && polygon.source(polygon.opposite(first_hedge)) != actual_triangle[j])
-                    actual_ext_point = polygon.point(actual_triangle[j]);
-                if(polygon.source(first_hedge) != adjacent_triangle[j] && polygon.source(polygon.opposite(first_hedge)) != adjacent_triangle[j])
-                    adjacent_ext_point = polygon.point(adjacent_triangle[j]);
+            CGL::Point3 actual_ext_point = polygon.point(polygon.target(first_triagle_hedge));
+            CGL::Point3 adjacent_ext_point = polygon.point(polygon.target(adjacent_triangle_hedge));
+
+            x1 = triangle_goodness(actual_ext_point,adjacent_ext_point,polygon.point(polygon.target(initial_hedge)));
+            x2 = triangle_goodness(actual_ext_point,adjacent_ext_point,polygon.point(polygon.source(initial_hedge)));
+            double total_goodness_2 = x1 + x2;
+
+            /*
+            for (CGL::Mesh::Face_index f : polygon.faces()){
+                    printf("all face indexes before split: %d\n",f.idx());
+                    printf("initial hedge face: %d twin : %d \n",polygon.face(initial_hedge).idx(),polygon.face(polygon.opposite(initial_hedge)).idx());
+                }
+            */
+            CGAL::Euler::join_face(initial_hedge,polygon);
+            if(!CGL::is_diagonal(polygon,first_triagle_hedge,adjacent_triangle_hedge)){
+                //printf("First TRiangle Hedge: %d \n",first_triagle_hedge.idx());
+                //printf("Adjacent TRiangle Hedge: %d \n",adjacent_triangle_hedge.idx());
+                initial_hedge = CGAL::Euler::split_face(polygon.prev(first_triagle_hedge),polygon.prev(adjacent_triangle_hedge),polygon);
+                continue;
             }
+            initial_hedge = CGAL::Euler::split_face(polygon.prev(first_triagle_hedge),polygon.prev(adjacent_triangle_hedge),polygon);
 
-            //test if a segment between both external points intersects polygon
-            //to use is_diagonal function, need the half-edge for getting its target
-            // (the vertice that the hedge points to)
-
-        }
+            // Second option of triangulation is a triangle formed by (actual_ext_point,adjacent_ext_point,polygon.target(initial_hedge))
+            // and (actual_ext_point,adjacent_ext_point,polygon.source(initial_hedge))
+            
+            CGAL::Euler::join_face(initial_hedge,polygon);
+            if(total_goodness_2 > total_goodness_1) {
+                CGAL::Euler::split_face(first_triagle_hedge,adjacent_triangle_hedge,polygon);
+                printf("We should flip it.\n");
+            }
+            else {
+                CGAL::Euler::split_face(polygon.prev(first_triagle_hedge),polygon.prev(adjacent_triangle_hedge),polygon);
+                printf("We should not flip it \n");
+            }
+            
+        //}
+        
     }
-    /*
-    for (CGL::Mesh::Face_index f : polygon.faces()) {
-        CGL::Mesh::Halfedge_index hedge = polygon.halfedge(f);
-        while(polygon.face(polygon.opposite(hedge)).idx() == -1) {
-            hedge = polygon.next(polygon.opposite(hedge));
-        }
-        CGAL::Euler::join_face(hedge, polygon);
-        break;
-    }   
-    */ 
-    CGL::print_mesh(polygon);
 
+    for (CGL::Mesh::Face_index f : polygon.faces()) {
+        std::vector<CGL::Mesh::Vertex_index> triangle = get_face_vertices(f,polygon);
+        double goodness = triangle_goodness(polygon.point(triangle[0]),polygon.point(triangle[1]),polygon.point(triangle[2]));
+        printf("Goodness of triangle of face_idx %u = %f\n", f.idx(), goodness);
+        good_goodness += goodness;
+    }
+
+    printf("Naive Triangulation Total Goodness: %f\n",naive_goodness);
+    printf("Good Triangulation Total Goodness: %f\n",good_goodness);
+
+    //CGL::print_mesh(polygon);
+
+    CGAL::draw(original_polygon);
     CGAL::draw(polygon);
     return EXIT_SUCCESS;
 }
@@ -262,7 +286,7 @@ std::vector<CGL::Mesh::Vertex_index> get_face_vertices(CGL::Mesh::Face_index fac
 
         for (size_t i = 0; i < triangle_vertices.size(); ++i) {
             CGL::Point3 pt = polygon.point(triangle_vertices[i]); 
-            printf("v: %5d x: %+10.2f  y: %+10.2f\n", triangle_vertices[i].idx(), pt.x(), pt.y());
+            //printf("v: %5d x: %+10.2f  y: %+10.2f\n", triangle_vertices[i].idx(), pt.x(), pt.y());
         }
         printf("\n\n");
     
