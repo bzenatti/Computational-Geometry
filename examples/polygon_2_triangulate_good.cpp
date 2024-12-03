@@ -49,16 +49,13 @@ int main(int argc, char* argv[]) {
 
     CGL::Mesh original_polygon = CGL::read_mesh(argv[1]);
 
+    CGL::polygon_2_triangulate_naive(original_polygon);   //triangulates polygon received as input
+    
     CGL::Mesh polygon = original_polygon;
-    
-    CGL::polygon_2_triangulate_naive(polygon);   //triangulates polygon received as input
-    
-    original_polygon = polygon;
+
     double naive_goodness = 0;
     double good_goodness = 0;
     
-    //CGL::print_mesh(polygon);
-
     /*
         The first step of this project is to evaluate the "goodness" of triangles formed by the naive triangulation.
         To do this, we identify all triangles within the polygon by traversing its faces, as each face represents a triangle.
@@ -77,16 +74,18 @@ int main(int argc, char* argv[]) {
     for (CGL::Mesh::Face_index f : polygon.faces()) {
         std::vector<CGL::Mesh::Vertex_index> triangle = get_face_vertices(f,polygon);
         double goodness = triangle_goodness(polygon.point(triangle[0]),polygon.point(triangle[1]),polygon.point(triangle[2]));
-        printf("Goodness of triangle of face_idx %u = %f\n", f.idx(), goodness);
+        printf("BEFORE: Goodness of triangle of face_idx %u = %f\n", f.idx(), goodness);
         naive_goodness += goodness;
     }
 
     for (CGL::Mesh::Face_index f : polygon.faces()) {
+        // This is for ensuring that I won't lose the first triangle hedges
         CGL::Mesh::Halfedge_index initial_hedge = polygon.halfedge(f);
         CGL::Mesh::Halfedge_index next_hedge = polygon.next(initial_hedge); //Saves a pointer to next hedge of first triangle
         CGL::Mesh::Halfedge_index prev_hedge = polygon.prev(initial_hedge); //Saves a pointer to prev hedge of first triangle
         CGL::Mesh::Halfedge_index hedges[3] = {initial_hedge,next_hedge,prev_hedge};
-        // This is for ensuring that I won't lose the first triangle hedges
+
+        // This loop classify if it is worth to flip the edge it is looking
         for(int i = 0;i < 3; i++){
             initial_hedge = hedges[i];
             // If the face of the twin is the outer one, skip it
@@ -99,21 +98,18 @@ int main(int argc, char* argv[]) {
 
             if(can_flip(initial_hedge,polygon) && compare_goodness(first_triangle_hedge,adjacent_triangle_hedge,polygon))
                 edge_flip(initial_hedge,polygon);
-
-            initial_hedge = next_hedge;
-            next_hedge = polygon.next(initial_hedge);
         }
     }
 
     for (CGL::Mesh::Face_index f : polygon.faces()) {
         std::vector<CGL::Mesh::Vertex_index> triangle = get_face_vertices(f,polygon);
         double goodness = triangle_goodness(polygon.point(triangle[0]),polygon.point(triangle[1]),polygon.point(triangle[2]));
-        printf("Goodness of triangle of face_idx %u = %f\n", f.idx(), goodness);
+        printf("AFTER: Goodness of triangle of face_idx %u = %f\n", f.idx(), goodness);
         good_goodness += goodness;
     }
 
-    printf("Naive Triangulation Total Goodness: %f\n",naive_goodness);
-    printf("Good Triangulation Total Goodness: %f\n",good_goodness);
+    printf("\nNaive Triangulation Total Goodness: %f\n",naive_goodness);
+    printf("\nGood Triangulation Total Goodness: %f\n\n",good_goodness);
 
     //CGL::print_mesh(polygon);
 
@@ -223,16 +219,11 @@ double triangle_goodness (CGL::Point3 p0, CGL::Point3 p1, CGL::Point3 p2){
     double std_deviation = std::sqrt((angle0 - 60)*(angle0 - 60) + 
                                      (angle1 - 60)*(angle1 - 60) +
                                      (angle2 - 60)*(angle2 - 60)) / 3;
-    // double mean = (angle0 + angle1 + angle2)/3;
-    // mean *= 180/PI;
-    //printf("This should be, ideally, 0. \t %f  ", std_deviation);
 
     // Considering that for std deviation 0 is ideal and 60 is horrible, 0 returns 1 and 60 returns 0
+
     // Scale of 0-1 of goodness:
     scale = 1 - (std_deviation / 60);
-
-    //printf("Scale of goodness %f \n", scale);
-
     return scale;
 }
 
@@ -258,10 +249,7 @@ std::vector<CGL::Mesh::Vertex_index> get_face_vertices(CGL::Mesh::Face_index fac
 
         for (size_t i = 0; i < triangle_vertices.size(); ++i) {
             CGL::Point3 pt = polygon.point(triangle_vertices[i]); 
-            //printf("v: %5d x: %+10.2f  y: %+10.2f\n", triangle_vertices[i].idx(), pt.x(), pt.y());
         }
-        printf("\n\n");
-    
     return triangle_vertices;
 }
 
@@ -271,9 +259,7 @@ void edge_flip(CGL::Mesh::Halfedge_index& e, CGL::Mesh& polygon){
     CGL::Mesh::Halfedge_index adjacent_triangle_hedge = polygon.next(polygon.opposite(e));
 
     CGAL::Euler::join_face(e,polygon);
-    //CGAL::draw(polygon);
     e = CGAL::Euler::split_face(first_triagle_hedge,adjacent_triangle_hedge,polygon);
-    //CGAL::draw(polygon);
 }
 
 // Is adjacente triangle better?
