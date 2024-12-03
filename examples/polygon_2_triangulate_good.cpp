@@ -31,7 +31,11 @@ bool isVerticeEar(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3, CGL::Polygon2 P
 bool isInsideTriangle(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3, CGL::Point2 point);
 
 double triangle_goodness (CGL::Point3 p0, CGL::Point3 p1, CGL::Point3 p2);
+void edge_flip(CGL::Mesh::Halfedge_index& e, CGL::Mesh& polygon);
 std::vector<CGL::Mesh::Vertex_index> get_face_vertices(CGL::Mesh::Face_index face, CGL::Mesh polygon);
+
+bool compare_goodness(CGL::Mesh::Halfedge_index first_triangle_hedge, CGL::Mesh::Halfedge_index adjacent_triangle_hedge, CGL::Mesh polygon);
+bool can_flip(CGL::Mesh::Halfedge_index initial_hedge, CGL::Mesh polygon);
 
 
 int main(int argc, char* argv[]) {
@@ -48,10 +52,11 @@ int main(int argc, char* argv[]) {
     CGL::Mesh polygon = original_polygon;
     
     CGL::polygon_2_triangulate_naive(polygon);   //triangulates polygon received as input
+    
     original_polygon = polygon;
     double naive_goodness = 0;
     double good_goodness = 0;
-
+    
     //CGL::print_mesh(polygon);
 
     /*
@@ -75,64 +80,29 @@ int main(int argc, char* argv[]) {
         printf("Goodness of triangle of face_idx %u = %f\n", f.idx(), goodness);
         naive_goodness += goodness;
     }
-    //for (CGL::Mesh::Face_index f : polygon.faces())
 
     for (CGL::Mesh::Face_index f : polygon.faces()) {
-        // This loop is for verifying the three adjacent triangles
-        //for(int i = 0;i < 3;i++){
-            CGL::Mesh::Halfedge_index initial_hedge = polygon.halfedge(f);
-
+        CGL::Mesh::Halfedge_index initial_hedge = polygon.halfedge(f);
+        CGL::Mesh::Halfedge_index next_hedge = polygon.next(initial_hedge); //Saves a pointer to next hedge of first triangle
+        CGL::Mesh::Halfedge_index prev_hedge = polygon.prev(initial_hedge); //Saves a pointer to prev hedge of first triangle
+        CGL::Mesh::Halfedge_index hedges[3] = {initial_hedge,next_hedge,prev_hedge};
+        // This is for ensuring that I won't lose the first triangle hedges
+        for(int i = 0;i < 3; i++){
+            initial_hedge = hedges[i];
             // If the face of the twin is the outer one, skip it
-            if(polygon.face(polygon.opposite(initial_hedge)).idx() == -1)
+            if(polygon.face(polygon.opposite(initial_hedge)).idx() == -1){
+                initial_hedge = polygon.next(initial_hedge);
                 continue;
-
-            CGL::Mesh::Halfedge_index first_triagle_hedge = polygon.next(initial_hedge);
+            }
+            CGL::Mesh::Halfedge_index first_triangle_hedge = polygon.next(initial_hedge);
             CGL::Mesh::Halfedge_index adjacent_triangle_hedge = polygon.next(polygon.opposite(initial_hedge));
 
-            std::vector<CGL::Mesh::Vertex_index> actual_triangle_vertices = get_face_vertices(f,polygon);
-            std::vector<CGL::Mesh::Vertex_index> adjacent_triangle_vertices = get_face_vertices(polygon.face(adjacent_triangle_hedge),polygon);
+            if(can_flip(initial_hedge,polygon) && compare_goodness(first_triangle_hedge,adjacent_triangle_hedge,polygon))
+                edge_flip(initial_hedge,polygon);
 
-            double x1 = triangle_goodness(polygon.point(actual_triangle_vertices[0]),polygon.point(actual_triangle_vertices[1]),polygon.point(actual_triangle_vertices[2]));
-            double x2 = triangle_goodness(polygon.point(adjacent_triangle_vertices[0]),polygon.point(adjacent_triangle_vertices[1]),polygon.point(adjacent_triangle_vertices[2]));
-            double total_goodness_1 = x1 + x2;
-
-            CGL::Point3 actual_ext_point = polygon.point(polygon.target(first_triagle_hedge));
-            CGL::Point3 adjacent_ext_point = polygon.point(polygon.target(adjacent_triangle_hedge));
-
-            x1 = triangle_goodness(actual_ext_point,adjacent_ext_point,polygon.point(polygon.target(initial_hedge)));
-            x2 = triangle_goodness(actual_ext_point,adjacent_ext_point,polygon.point(polygon.source(initial_hedge)));
-            double total_goodness_2 = x1 + x2;
-
-            /*
-            for (CGL::Mesh::Face_index f : polygon.faces()){
-                    printf("all face indexes before split: %d\n",f.idx());
-                    printf("initial hedge face: %d twin : %d \n",polygon.face(initial_hedge).idx(),polygon.face(polygon.opposite(initial_hedge)).idx());
-                }
-            */
-            CGAL::Euler::join_face(initial_hedge,polygon);
-            if(!CGL::is_diagonal(polygon,first_triagle_hedge,adjacent_triangle_hedge)){
-                //printf("First TRiangle Hedge: %d \n",first_triagle_hedge.idx());
-                //printf("Adjacent TRiangle Hedge: %d \n",adjacent_triangle_hedge.idx());
-                initial_hedge = CGAL::Euler::split_face(polygon.prev(first_triagle_hedge),polygon.prev(adjacent_triangle_hedge),polygon);
-                continue;
-            }
-            initial_hedge = CGAL::Euler::split_face(polygon.prev(first_triagle_hedge),polygon.prev(adjacent_triangle_hedge),polygon);
-
-            // Second option of triangulation is a triangle formed by (actual_ext_point,adjacent_ext_point,polygon.target(initial_hedge))
-            // and (actual_ext_point,adjacent_ext_point,polygon.source(initial_hedge))
-            
-            CGAL::Euler::join_face(initial_hedge,polygon);
-            if(total_goodness_2 > total_goodness_1) {
-                CGAL::Euler::split_face(first_triagle_hedge,adjacent_triangle_hedge,polygon);
-                printf("We should flip it.\n");
-            }
-            else {
-                CGAL::Euler::split_face(polygon.prev(first_triagle_hedge),polygon.prev(adjacent_triangle_hedge),polygon);
-                printf("We should not flip it \n");
-            }
-            
-        //}
-        
+            initial_hedge = next_hedge;
+            next_hedge = polygon.next(initial_hedge);
+        }
     }
 
     for (CGL::Mesh::Face_index f : polygon.faces()) {
@@ -250,7 +220,9 @@ double triangle_goodness (CGL::Point3 p0, CGL::Point3 p1, CGL::Point3 p2){
     double angle1 = angleBetween(p1,p0,p1,p2) * 180/PI;
     double angle2 = angleBetween(p2,p0,p2,p1) * 180/PI;
 
-    double std_deviation = std::sqrt((angle0 - 60)*(angle0 - 60) + (angle1 - 60)*(angle1 - 60)+(angle0 - 60)*(angle0 - 60)) / 3;
+    double std_deviation = std::sqrt((angle0 - 60)*(angle0 - 60) + 
+                                     (angle1 - 60)*(angle1 - 60) +
+                                     (angle2 - 60)*(angle2 - 60)) / 3;
     // double mean = (angle0 + angle1 + angle2)/3;
     // mean *= 180/PI;
     //printf("This should be, ideally, 0. \t %f  ", std_deviation);
@@ -291,4 +263,49 @@ std::vector<CGL::Mesh::Vertex_index> get_face_vertices(CGL::Mesh::Face_index fac
         printf("\n\n");
     
     return triangle_vertices;
+}
+
+void edge_flip(CGL::Mesh::Halfedge_index& e, CGL::Mesh& polygon){
+    CGL::Mesh::Face_index face = polygon.face(e);
+    CGL::Mesh::Halfedge_index first_triagle_hedge = polygon.next(e);
+    CGL::Mesh::Halfedge_index adjacent_triangle_hedge = polygon.next(polygon.opposite(e));
+
+    CGAL::Euler::join_face(e,polygon);
+    //CGAL::draw(polygon);
+    e = CGAL::Euler::split_face(first_triagle_hedge,adjacent_triangle_hedge,polygon);
+    //CGAL::draw(polygon);
+}
+
+// Is adjacente triangle better?
+bool compare_goodness(CGL::Mesh::Halfedge_index first_triangle_hedge, CGL::Mesh::Halfedge_index adjacent_triangle_hedge, CGL::Mesh polygon){
+    std::vector<CGL::Mesh::Vertex_index> actual_triangle_vertices = get_face_vertices(polygon.face(first_triangle_hedge),polygon);
+    std::vector<CGL::Mesh::Vertex_index> adjacent_triangle_vertices = get_face_vertices(polygon.face(adjacent_triangle_hedge),polygon);
+
+    double x1 = triangle_goodness(polygon.point(actual_triangle_vertices[0]),polygon.point(actual_triangle_vertices[1]),polygon.point(actual_triangle_vertices[2]));
+    double x2 = triangle_goodness(polygon.point(adjacent_triangle_vertices[0]),polygon.point(adjacent_triangle_vertices[1]),polygon.point(adjacent_triangle_vertices[2]));
+    double total_goodness_1 = x1 + x2;
+
+    CGL::Point3 actual_ext_point = polygon.point(polygon.target(first_triangle_hedge));
+    CGL::Point3 adjacent_ext_point = polygon.point(polygon.target(adjacent_triangle_hedge));
+
+    x1 = triangle_goodness(actual_ext_point,adjacent_ext_point,polygon.point(polygon.source(first_triangle_hedge)));
+    x2 = triangle_goodness(actual_ext_point,adjacent_ext_point,polygon.point(polygon.source(adjacent_triangle_hedge)));
+    double total_goodness_2 = x1 + x2;
+
+    if(total_goodness_2 > total_goodness_1) 
+        return true;
+    else        
+        return false;
+}
+
+bool can_flip(CGL::Mesh::Halfedge_index initial_hedge, CGL::Mesh polygon){
+    CGL::Mesh::Halfedge_index first_triangle_hedge = polygon.next(initial_hedge);
+    CGL::Mesh::Halfedge_index adjacent_triangle_hedge = polygon.next(polygon.opposite(initial_hedge));
+
+    CGAL::Euler::join_face(initial_hedge,polygon);
+
+    if(!CGL::is_diagonal(polygon,first_triangle_hedge,adjacent_triangle_hedge))
+        return false;
+    
+    return true;
 }
