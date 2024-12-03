@@ -56,7 +56,7 @@ int main()
 CGL::Polygon2 gift_wrapping(std::vector<CGL::Point2> pts){
     CGL::Polygon2 hull;
     int leftmostIndex = 0;
-    //In case of tie, lowest y is the leftmos
+    //In case of tie, lowest y is the leftmost
     for (int i = 1; i < pts.size(); i++)
     {
         if(pts[i].x() < pts[leftmostIndex].x()) {
@@ -74,10 +74,11 @@ CGL::Polygon2 gift_wrapping(std::vector<CGL::Point2> pts){
         q = (p + 1) % pts.size(); // Initialize q to the next point
 
         for (int i = 0; i < pts.size(); i++)
-            
+            //If i is left pq, so q = i, because I want all points on the right
             if (left(pts[p], pts[q], pts[i])) 
                 q = i;  
         p = q; 
+        //CGAL::draw(hull);
     } while (p != leftmostIndex);  
 
     return hull;
