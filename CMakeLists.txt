@@ -27,6 +27,10 @@ add_executable(atividade2 ${CGL_EXAMPLES}/atividade2.cpp ${CGL_DRAW_SOURCE}/Draw
 target_include_directories(atividade2 PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
 target_link_libraries(atividade2 PUBLIC CGAL::CGAL_Basic_viewer)
 
+add_executable(convex_hull ${CGL_EXAMPLES}/convex_hull.cpp ${CGL_DRAW_SOURCE}/DrawPoints2.cpp ${CGL_SOURCE}/Random.cpp)
+target_include_directories(convex_hull PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
+target_link_libraries(convex_hull PUBLIC CGAL::CGAL_Basic_viewer)
+
 add_executable(polygon_2_triangulate_good ${CGL_EXAMPLES}/polygon_2_triangulate_good.cpp ${CGL_SOURCE}/IO.cpp ${CGL_SOURCE}/Partition.cpp ${CGL_SOURCE}/Primitives.cpp ${CGL_DRAW_SOURCE}/DrawSegments3.cpp)
 target_include_directories(polygon_2_triangulate_good PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
 target_link_libraries(polygon_2_triangulate_good PUBLIC CGAL::CGAL_Basic_viewer)

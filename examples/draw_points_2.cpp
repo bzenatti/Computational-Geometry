@@ -29,7 +29,7 @@ int main()
 
     /* Create pointss with random endpoints. */
     int ns = 20; /* Number of points. */
-    CGL::Random rng(-10,10); /* "bounding box" for points. "*/
+    CGL::Random rng(0,10); /* "bounding box" for points. "*/
     for (int i = 1; i <= ns; i++)
     {
         /* Point. */

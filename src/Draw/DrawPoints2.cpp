@@ -44,7 +44,7 @@ void CGL::SimplePoints2ViewerQt::keyPressEvent(QKeyEvent* e)
 
 void CGL::draw(std::vector<CGL::Point2> &p2)
 {
-    CGAL::Qt::init_ogl_context(3, 3);
+    CGAL::Qt::init_ogl_context(4, 3);
     int argc = 1;
     const char* argv[2] = { "segs3_viewer","\0" };
     QApplication app(argc, const_cast<char**>(argv));
