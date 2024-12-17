@@ -31,7 +31,11 @@ add_executable(convex_hull ${CGL_EXAMPLES}/convex_hull.cpp ${CGL_DRAW_SOURCE}/Dr
 target_include_directories(convex_hull PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
 target_link_libraries(convex_hull PUBLIC CGAL::CGAL_Basic_viewer)
 
-add_executable(polygon_2_triangulate_good ${CGL_EXAMPLES}/polygon_2_triangulate_good.cpp ${CGL_SOURCE}/IO.cpp ${CGL_SOURCE}/Partition.cpp ${CGL_SOURCE}/Primitives.cpp ${CGL_DRAW_SOURCE}/DrawSegments3.cpp)
+add_executable(atividade8 ${CGL_EXAMPLES}/atividade8.cpp ${CGL_DRAW_SOURCE}/DrawPoints2.cpp ${CGL_SOURCE}/Random.cpp ${CGL_SOURCE}/IO.cpp ${CGL_SOURCE}/Partition.cpp ${CGL_SOURCE}/Primitives.cpp ${CGL_DRAW_SOURCE}/DrawSegments3.cpp)
+target_include_directories(atividade8 PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
+target_link_libraries(atividade8 PUBLIC CGAL::CGAL_Basic_viewer)
+
+add_executable(polygon_2_triangulate_good ${CGL_EXAMPLES}/polygon_2_triangulate_good.cpp  ${CGL_SOURCE}/IO.cpp ${CGL_SOURCE}/Partition.cpp ${CGL_SOURCE}/Primitives.cpp ${CGL_DRAW_SOURCE}/DrawSegments3.cpp)
 target_include_directories(polygon_2_triangulate_good PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
 target_link_libraries(polygon_2_triangulate_good PUBLIC CGAL::CGAL_Basic_viewer)
 

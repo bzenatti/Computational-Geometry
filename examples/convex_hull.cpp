@@ -1,14 +1,3 @@
-/**
- * @file draw_points_2.cpp
- * @ingroup cglexamples
- * @brief Example of drawing 2D points.
- *
- * This example creates and draws a set of random 2D points.
- *
- * @author Ricardo Dutra da Silva
- */
-
-
 #include <Types.h>
 #include <DrawPoints2.h>
 #include <CGAL/draw_polygon_2.h>
