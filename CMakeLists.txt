@@ -6,9 +6,12 @@ project(CGL VERSION 1.0)
 
 # Find required packages.
 find_package(CGAL REQUIRED Qt5)
+find_package(OpenCV REQUIRED )
 
 # Build type for performance.
 set(CMAKE_BUILD_TYPE Release)
+
+set(OpenCV_DIR "/home/brunopc/opencv_installation/opencv/build/")
 
 # Set library directories.
 set(CGL_SOURCE ${PROJECT_SOURCE_DIR}/src)
@@ -18,6 +21,11 @@ set(CGL_DRAW_INCLUDE ${CGL_INCLUDE}/Draw)
 
 # Set examples directory.
 set(CGL_EXAMPLES ${PROJECT_SOURCE_DIR}/examples)
+
+
+add_executable(triangulate_image ${CGL_EXAMPLES}/triangulate_image.cpp)
+target_include_directories(triangulate_image PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE} ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(triangulate_image PUBLIC CGAL::CGAL_Basic_viewer ${OpenCV_LIBS})
 
 add_executable(atividade1 ${CGL_EXAMPLES}/atividade1.cpp ${CGL_DRAW_SOURCE}/DrawPoints2.cpp ${CGL_SOURCE}/Random.cpp)
 target_include_directories(atividade1 PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
