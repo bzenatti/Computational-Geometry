@@ -27,6 +27,10 @@ add_executable(triangulate_image ${CGL_EXAMPLES}/triangulate_image.cpp)
 target_include_directories(triangulate_image PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE} ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(triangulate_image PUBLIC CGAL::CGAL_Basic_viewer ${OpenCV_LIBS})
 
+add_executable(delaunay ${CGL_EXAMPLES}/delaunay.cpp ${CGL_DRAW_SOURCE}/DrawPoints2.cpp ${CGL_SOURCE}/Random.cpp ${CGL_SOURCE}/IO.cpp ${CGL_SOURCE}/Partition.cpp ${CGL_SOURCE}/Primitives.cpp ${CGL_DRAW_SOURCE}/DrawSegments3.cpp)
+target_include_directories(delaunay PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
+target_link_libraries(delaunay PUBLIC CGAL::CGAL_Basic_viewer)
+
 add_executable(atividade1 ${CGL_EXAMPLES}/atividade1.cpp ${CGL_DRAW_SOURCE}/DrawPoints2.cpp ${CGL_SOURCE}/Random.cpp)
 target_include_directories(atividade1 PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE})
 target_link_libraries(atividade1 PUBLIC CGAL::CGAL_Basic_viewer)
