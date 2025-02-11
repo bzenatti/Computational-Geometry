@@ -22,6 +22,17 @@ typedef CGAL::Creator_uniform_2<int, CGL::Point2>        Creator;
 typedef CGAL::Random_points_in_square_2<CGL::Point2, Creator> Point_generator;
 
 
+typedef CGL::Mesh Mesh;
+typedef CGL::Point3 Point3;
+typedef CGL::Point2 Point2;
+
+typedef CGL::Mesh::Vertex_index Vertex_index;
+typedef CGL::Mesh::Halfedge_index Halfedge_index;
+typedef CGL::Mesh::Face_index Face_index;
+typedef CGL::Mesh::Edge_index Edge_index;
+
+
+
 float getDeterminant(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3);
 float getDeterminant(std::vector<CGL::Point2> pts);
 double getDeterminant4x4(double matrix[4][4], int n);
@@ -53,20 +64,21 @@ bool can_flip(CGL::Mesh::Halfedge_index initial_hedge, CGL::Mesh polygon);
 std::vector<CGL::Point2>  createSuperTriangle(const std::vector<CGL::Point2>& points);
 CGL::Mesh delaunay_triangulation(std::vector<CGL::Point2> mesh_vertices);
 void insert_point(CGL::Mesh& mesh, CGL::Point2 vi);
+void insert_triangles(Halfedge_index halfedge,Vertex_index new_vertex, CGL::Mesh& mesh);
 bool isEdgeShared(CGL::Mesh::Halfedge_index hedge, std::vector<CGL::Mesh::Face_index> triangle, CGL::Mesh mesh);
 
 int main(int argc, char* argv[]) {
 
     /* Vector to store points. */
-    std::vector<CGL::Point3> pts;
-    std::vector<CGL::Mesh::Vertex_index> indexes;
+    std::vector<Point3> pts;
+    std::vector<Vertex_index> indexes;
 
     /* Simple mesh with random vertices. */
-    CGL::Mesh mesh_delaunay;
+    Mesh mesh_delaunay;
 
     int nv = 4;    /* Number of vertices. */
 
-    std::vector<CGL::Point2>   point_vec;
+    std::vector<Point2>   point_vec;
     CGAL::Random         rand;
 
     rand.get_seed();
@@ -81,34 +93,11 @@ int main(int argc, char* argv[]) {
     }
     */
 
-    CGL::Mesh mesh;
+    Mesh mesh;
     
     int i = 0 ;
-    /* 
-    // Add vertices to the mesh
-    for (auto p = point_vec.begin(); p != point_vec.end(); ++p) {
-        CGL::Point3 p3(p->x(), p->y(), 0.0);  // Convert 2D point to 3D 
-        CGL::Mesh::Vertex_index vi = mesh.add_vertex(p3);
-        // if(i < 3)
-        //     indexes.push_back(vi);
-        // i++;
-    }
 
-    // CGAL::Euler::add_face(indexes,mesh);
-    std::vector<CGL::Point2> superTriangle = createSuperTriangle(point_vec);
     
-    for(int i = 0;i<3;i++){
-        CGL::Point2 p = superTriangle[i];
-        CGL::Point3 p3(p.x(), p.y(), 0.0);  // Convert 2D point to 3D 
-        CGL::Mesh::Vertex_index vi = mesh.add_vertex(p3);
-    }
-
-    //Verify if all vertexes are inside triangle
-    for(int i = 0;i<nv;i++){
-        if(!isInsideTriangle(superTriangle[0],superTriangle[1],superTriangle[2],point_vec[i]))
-            return -1;
-        
-    } */
 
     mesh = delaunay_triangulation(point_vec);
 
@@ -120,7 +109,7 @@ int main(int argc, char* argv[]) {
     return EXIT_SUCCESS;
 }
 
-std::vector<CGL::Point2> createSuperTriangle(const std::vector<CGL::Point2>& points) {
+std::vector<Point2> createSuperTriangle(const std::vector<Point2>& points) {
     // Find bounding box
     double minX = INFINITY;
     double maxX = -INFINITY;
@@ -145,9 +134,9 @@ std::vector<CGL::Point2> createSuperTriangle(const std::vector<CGL::Point2>& poi
     // Making it 20% larger than necessary to ensure all points are inside
     std::vector<CGL::Point2>  superTriangle;
 
-    CGL::Point2 p1(midx - 2 * dmax, midy - dmax);
-    CGL::Point2 p2(midx + 2 * dmax, midy - dmax);
-    CGL::Point2 p3(midx, midy + 2 * dmax);
+    Point2 p1(midx - 2 * dmax, midy - dmax);
+    Point2 p2(midx + 2 * dmax, midy - dmax);
+    Point2 p3(midx, midy + 2 * dmax);
 
     //CCW order
     superTriangle.push_back(p1);
@@ -172,17 +161,24 @@ CGL::Mesh delaunay_triangulation(std::vector<CGL::Point2> vertices){
     }
 
     CGAL::Euler::add_face(super_indexes,delaunay_mesh);
+    if(!delaunay_mesh.is_valid(false))
+        printf("deu errado");
 
     // Gets the halfedges of the super triangle
-    std::vector<CGL::Mesh::Halfedge_index> super_hedges;
-    for(CGL::Mesh::Vertex_index vertex : super_indexes){
-        super_hedges.push_back(delaunay_mesh.halfedge(vertex));
+    std::vector<Halfedge_index> super_hedges;
+    for(Vertex_index vertex : super_indexes){
+        // For some reason, delaunay_mesh.halfedge(vertex) returns the halfedge in the CW order
+        super_hedges.push_back(delaunay_mesh.opposite(delaunay_mesh.halfedge(vertex))); 
+        // std::cout << delaunay_mesh.opposite(delaunay_mesh.halfedge(vertex)) << 
+        // delaunay_mesh.face(delaunay_mesh.opposite(delaunay_mesh.halfedge(vertex))) << std::endl;
     }
 
-    for (auto p = vertices.begin(); p != vertices.end(); ++p) {
-        insert_point(delaunay_mesh,*p);
-        printf("Test");
-    }
+    insert_point(delaunay_mesh,vertices[0]);
+
+    // for (auto p = vertices.begin(); p != vertices.end(); ++p) {
+    //     insert_point(delaunay_mesh,*p);
+    //     printf("Test");
+    // }
     
 
     // //Remove super triangle
@@ -195,141 +191,135 @@ CGL::Mesh delaunay_triangulation(std::vector<CGL::Point2> vertices){
 
 void insert_point(CGL::Mesh& mesh, CGL::Point2 vi){
 
-    std::vector<CGL::Mesh::Face_index> bad_triangles;
-    CGL::Point3 p3(vi.x(), vi.y(), 0.0);  // Convert 2D point to 3D 
-    
+    Point3 p3(vi.x(), vi.y(), 0.0);  // Convert 2D point to 3D 
+    Vertex_index new_vertice = mesh.add_vertex(p3);
 
-    // Triangles that are no longer valid
-    for (CGL::Mesh::Face_index f : mesh.faces()) {
-        std::vector<CGL::Mesh::Vertex_index> triangle_vertices = get_face_vertices(f,mesh);
+    //Get face the point is inside
+    Face_index boundary_triangle;
+    for(Face_index f : mesh.faces()){
+        Halfedge_index hedge = mesh.halfedge(f);
+        Point2 t1(mesh.point(mesh.target(hedge)).x(), mesh.point(mesh.target(hedge)).y());
+        Point2 t2(mesh.point(mesh.source(hedge)).x(), mesh.point(mesh.source(hedge)).y());
+        Point2 t3(mesh.point(mesh.target(mesh.next(hedge))).x(), mesh.point(mesh.target(mesh.next(hedge))).y());
 
-        CGL::Point3 point(vi.x(), vi.y(), 0.0);  // Convert 2D point to 3D 
-        CGL::Point3 t1 = mesh.point(triangle_vertices[0]);
-        CGL::Point3 t2 = mesh.point(triangle_vertices[1]);
-        CGL::Point3 t3 = mesh.point(triangle_vertices[2]);
-
-        if(inCircle(t1,t2,t3, point)){
-            bad_triangles.push_back(f);
+        if(isInsideTriangle(t1,t2,t3,vi)){
+            boundary_triangle = f;
+            break;
         }
     }
 
-    // Get the boundary of the point
-    std::vector<CGL::Mesh::Halfedge_index> boundary_hedges;
-    // Get the bad hedges (neither boundary nor outer)
-    std::vector<CGL::Mesh::Halfedge_index> bad_hedges;
+    Halfedge_index halfedge = mesh.halfedge(boundary_triangle);
 
-    for (CGL::Mesh::Face_index f : bad_triangles) {
-        std::vector<CGL::Mesh::Halfedge_index> triangle_hedges = get_face_halfedges(f,mesh);
-        for(CGL::Mesh::Halfedge_index hedge : triangle_hedges){
-            if(!isEdgeShared(hedge,bad_triangles,mesh) || mesh.face(mesh.opposite(hedge)).idx() == -1)
-                boundary_hedges.push_back(hedge);
-            else{
-                if(mesh.face(mesh.opposite(hedge)).idx() != -1){
-                    bad_hedges.push_back(hedge);
-                }
-            }
-        }
-    }
+    std::vector<Vertex_index> face_vertexes = get_face_vertices(boundary_triangle,mesh);
+    //add_face do cgal n funciona pq ele recebe vertice como parametro, 
+    //e os vertices aponta para as twins
 
+    insert_triangles(halfedge,new_vertice,mesh);
 
-    // Remove bad faces
-    for (CGL::Mesh::Halfedge_index halfedge : bad_hedges){
-        CGAL::Euler::join_face(halfedge,mesh);
-    }
-    
-    /* 
-    // Remove bad faces
-    for (CGL::Mesh::Halfedge_index halfedge : bad_hedges){
-        bool isSuperFace = false;
-        std::vector<CGL::Mesh::Halfedge_index> triangle_hedges = get_face_halfedges(mesh.face(halfedge),mesh);
-        for (CGL::Mesh::Halfedge_index halfedge : triangle_hedges){
-            if( mesh.face(mesh.opposite(halfedge)).idx() == -1){
-                isSuperFace = true;
-                break;
-            }
-        }
-        if(!isSuperFace)
-            CGAL::Euler::remove_face(halfedge,mesh);
-    }
-    */
-
-    // HOW TO ADD A FACE WITH TWO NEW EDGES
-
-    CGL::Mesh::Vertex_index vertice = mesh.add_vertex(p3);
-
-    // CGL::print_mesh(mesh);
-    CGL::Mesh::Vertex_index v1 = mesh.source(boundary_hedges[0]);
-    CGL::Mesh::Vertex_index v2 = mesh.target(boundary_hedges[0]);
-    std::vector<CGL::Mesh::Vertex_index> new_triangle = {v2,v1,vertice};
-
-    CGL::Mesh::Face_index f = CGAL::Euler::add_face(new_triangle,mesh);
-    
-
-    //This outputs that the face did not update
-    // for(CGL::Mesh::Halfedge_index hedge : boundary_hedges){
-    //     std::cout << mesh.face(hedge);
-    // }
-    std::cout << f;
-    std::cout << mesh.halfedge(v2);
-
-    v1 = mesh.source(boundary_hedges[1]);
-    v2 = mesh.target(boundary_hedges[1]);
-
-    std::vector<CGL::Mesh::Vertex_index> new_triangle2 = {v2,v1,vertice};
-    CGAL::Euler::split_face(boundary_hedges[1],mesh.prev(mesh.halfedge(vertice)),mesh);
-
-    
-
-
-    // CGL::Mesh::Face_index f = mesh.add_face(v1,v2,vertice);
-    // if(f == CGL::Mesh::null_face()){
-    //     mesh.add_face(v2,v1,vertice);
-    // }
-        
-    // CGAL::Euler::split_face(mesh.prev(mesh.halfedge(vertice)),boundary_hedges[1],mesh);
-
-    // // //Triangulate the hole
-    // for(CGL::Mesh::Halfedge_index hedge : boundary_hedges){
-
-    //     CGL::Mesh::Vertex_index v1 = mesh.source(hedge);
-    //     CGL::Mesh::Vertex_index v2 = mesh.target(hedge);
-        
-    //     //Convert to 2D point to get orientation
-    //     CGL::Point2 p1(mesh.point(v1).x(),mesh.point(v1).y());
-    //     CGL::Point2 p2(mesh.point(v2).x(),mesh.point(v2).y());
-
-    
-    //     std::vector<CGL::Mesh::Vertex_index> new_triangle = {v1,v2,vertice};    //Maybe check orientation?
-    //     for (auto i : new_triangle)
-    //         std::cout << i << " ";
-    //     std::cout << std::endl;
-
-    //     std::cout << "print10";
-    //     CGL::Mesh::Face_index f = mesh.add_face(v1,v2,vertice);
-    //     if(f == CGL::Mesh::null_face()){
-    //         mesh.add_face(v2,v1,vertice);
-    //     }
-    //     std::cout << "print20";
-    //     //CGL::print_mesh(mesh);
-    // }
+    //Legalize Edges
 
 
     CGL::print_mesh(mesh);
     CGAL::draw(mesh);
 
 }
+void insert_triangles(Halfedge_index halfedge, Vertex_index new_vertex, CGL::Mesh& mesh) {
+    // Debug output
+    std::cout << "Starting insert_triangles operation" << std::endl;
+    std::cout << "Initial halfedge: " << halfedge << ", New vertex: " << new_vertex << std::endl;
 
-bool isEdgeShared(CGL::Mesh::Halfedge_index hedge, std::vector<CGL::Mesh::Face_index> triangle, CGL::Mesh mesh){
-    for (CGL::Mesh::Face_index f : triangle){
+    try {
+        // Store original face and its halfedges
+        Face_index old_face = mesh.face(halfedge);
+        Halfedge_index he1 = halfedge;
+        Halfedge_index he2 = mesh.next(he1);
+        Halfedge_index he3 = mesh.next(he2);
+
+        // Store original vertices
+        Vertex_index v1 = mesh.source(he1);
+        Vertex_index v2 = mesh.target(he1);
+        Vertex_index v3 = mesh.target(he2);
+
+        // Create new halfedges connecting to new_vertex
+        Halfedge_index new_he1 = mesh.add_edge(v2, new_vertex);
+        Halfedge_index new_he2 = mesh.add_edge(v3, new_vertex);
+        Halfedge_index new_he3 = mesh.add_edge(v1, new_vertex);
+
+        // Get opposite halfedges
+        Halfedge_index new_he1_opp = mesh.opposite(new_he1);
+        Halfedge_index new_he2_opp = mesh.opposite(new_he2);
+        Halfedge_index new_he3_opp = mesh.opposite(new_he3);
+
+        // Create new faces
+        Face_index new_triangle1 = mesh.add_face();
+        Face_index new_triangle2 = mesh.add_face();
+        // old_face will be reused for the third triangle
+
+        // Set faces for halfedges - First triangle
+        mesh.set_face(he1, old_face);
+        mesh.set_face(new_he1, old_face);
+        mesh.set_face(new_he3_opp, old_face);
+
+        // Second triangle
+        mesh.set_face(he2, new_triangle1);
+        mesh.set_face(new_he2, new_triangle1);
+        mesh.set_face(new_he1_opp, new_triangle1);
+
+        // Third triangle
+        mesh.set_face(he3, new_triangle2);
+        mesh.set_face(new_he3, new_triangle2);
+        mesh.set_face(new_he2_opp, new_triangle2);
+
+        // Set next relationships - First triangle
+        mesh.set_next(he1, new_he1);
+        mesh.set_next(new_he1, new_he3_opp);
+        mesh.set_next(new_he3_opp, he1);
+
+        // Second triangle
+        mesh.set_next(he2, new_he2);
+        mesh.set_next(new_he2, new_he1_opp);
+        mesh.set_next(new_he1_opp, he2);
+
+        // Third triangle
+        mesh.set_next(he3, new_he3);
+        mesh.set_next(new_he3, new_he2_opp);
+        mesh.set_next(new_he2_opp, he3);
+
+        // Set halfedge for faces
+        mesh.set_halfedge(old_face, he1);
+        mesh.set_halfedge(new_triangle1, he2);
+        mesh.set_halfedge(new_triangle2, he3);
+
+        // Set halfedge for the new vertex
+        mesh.set_halfedge(new_vertex, new_he1);
+
+        // Debug output
+        std::cout << "Created new halfedges: " << new_he1 << ", " << new_he2 << ", " << new_he3 << std::endl;
+        std::cout << "Created new faces: " << new_triangle1 << ", " << new_triangle2 << std::endl;
+
+        // Debug verification
+        if (mesh.is_valid(false)) {
+            std::cout << "Triangulation completed successfully" << std::endl;
+        } else {
+            std::cout << "Warning: Mesh validation failed after triangulation" << std::endl;
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "Error during triangulation: " << e.what() << std::endl;
+        throw;
+    }
+}
+
+
+
+bool isEdgeShared(Halfedge_index hedge, std::vector<Face_index> triangle, CGL::Mesh mesh){
+    for (Face_index f : triangle){
         if(mesh.face(mesh.opposite(hedge)).idx() == f)
             return true;
     }
 
     return false;
 }
-
-
-
 
 
 //This function receives as parameter three points

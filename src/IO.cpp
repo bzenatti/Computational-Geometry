@@ -143,7 +143,9 @@ void CGL::print_mesh_halfedges(CGL::Mesh &mesh)
     printf("%*s", 5, "");
     printf("Opposite");
     printf("%*s", 7, "");
-    printf("Source\n");
+    printf("Source");
+    printf("%*s", 5, "");
+    printf("Face\n");
     std::cout << std::string(table_width, '-') << std::endl;
 
     /* Print lines. */
@@ -158,6 +160,8 @@ void CGL::print_mesh_halfedges(CGL::Mesh &mesh)
         printf("%5d", mesh.opposite(h).idx());
         printf("%*s", 8, "");
         printf("%5d", mesh.source(h).idx());
+        printf("%*s", 8, "");
+        printf("%5d", mesh.face(h).idx());
         std::cout << std::endl;
     }
     std::cout << std::string(table_width, '=') << std::endl;
