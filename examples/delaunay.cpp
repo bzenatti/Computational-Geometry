@@ -181,12 +181,38 @@ CGL::Mesh delaunay_triangulation(std::vector<CGL::Point2> vertices){
         insert_point(delaunay_mesh,*p);
     }
 
-    //Remove super triangle
+    CGL::print_mesh(delaunay_mesh);
 
-    // for (Halfedge_index h : delaunay_mesh.halfedges_around_target(super_hedges[0])) {
-    //     delaunay_mesh.remove_edge(delaunay_mesh.edge(h));
-    // }
+    // Remove super triangle
+    // First, collect all faces and edges to remove
+    std::vector<Face_index> faces_to_remove;
+    std::vector<Edge_index> edges_to_remove;
 
+    // Identify faces and edges connected to super triangle vertices
+    for (Face_index f : delaunay_mesh.faces()) {
+        bool connected_to_super = false;
+        for (Vertex_index v : delaunay_mesh.vertices_around_face(delaunay_mesh.halfedge(f))) {
+            if (std::find(super_indexes.begin(), super_indexes.end(), v) != super_indexes.end()) {
+                connected_to_super = true;
+                break;
+            }
+        }
+        if (connected_to_super) {
+            faces_to_remove.push_back(f);
+        }
+    }
+
+    // Remove faces
+    for (Face_index f : faces_to_remove) {
+        delaunay_mesh.remove_face(f);
+    }
+
+    // Remove super triangle vertices (this will also remove connected edges)
+    for (Vertex_index v : super_indexes) {
+        delaunay_mesh.remove_vertex(v);
+    }
+
+    CGL::print_mesh(delaunay_mesh);
 
     return delaunay_mesh;
 }
