@@ -55,6 +55,7 @@ void CGL::SimpleVectors3ViewerQt::keyPressEvent(QKeyEvent* e)
 
 void CGL::draw(std::vector<CGL::Vector3> &s3)
 {
+    
     CGAL::Qt::init_ogl_context(3, 3);
     int argc = 1;
     const char* argv[2] = { "segs3_viewer","\0" };

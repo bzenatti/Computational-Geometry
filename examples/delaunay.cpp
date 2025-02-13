@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
 
     mesh = delaunay_triangulation(point_vec);
 
-    CGL::print_mesh(mesh);
+    // CGL::print_mesh(mesh);
 
     //printf("teste2");
     CGAL::draw(mesh);
@@ -210,10 +210,10 @@ void insert_point(CGL::Mesh& mesh, CGL::Point2 vi){
         Point3 t2 = mesh.point(mesh.target(next_he));
         Point3 t3 = mesh.point(mesh.target(next_next_he));
 
-        std::cout << "Triangle vertices:" << std::endl;
-        std::cout << "t1: " << t1 << std::endl;
-        std::cout << "t2: " << t2 << std::endl;
-        std::cout << "t3: " << t3 << std::endl;
+        // std::cout << "Triangle vertices:" << std::endl;
+        // std::cout << "t1: " << t1 << std::endl;
+        // std::cout << "t2: " << t2 << std::endl;
+        // std::cout << "t3: " << t3 << std::endl;
 
         if(isInsideTriangle(t1, t2, t3, p3)){
             boundary_triangle = f;
@@ -234,14 +234,13 @@ void insert_point(CGL::Mesh& mesh, CGL::Point2 vi){
     }
 
     if(!isInside){
-        printf("this points is on a edge, need to do");
-        // std::vector<Halfedge_index> new_hedges = insert_point_on_edge(point_halfedge,new_vertice,mesh);
+        // printf("this points is on a edge, need to do");
+        std::vector<Halfedge_index> new_hedges = insert_point_on_edge(point_halfedge,new_vertice,mesh);
 
-        // for (Halfedge_index he : new_hedges) {
-        //     if (he != Halfedge_index() && !mesh.is_border(he)) {
-        //         legalize_edge(mesh.prev(he), mesh);
-        //     }
-        // }
+        legalize_edge(mesh.prev(new_hedges[0]), mesh);
+        legalize_edge(mesh.prev(new_hedges[1]), mesh);
+        legalize_edge(mesh.prev(new_hedges[2]), mesh);
+        legalize_edge(mesh.prev(new_hedges[3]), mesh);
         
     }
     else{
@@ -354,12 +353,96 @@ std::vector<Halfedge_index> insert_triangles(Halfedge_index halfedge, Vertex_ind
     }
     
 }
-
 std::vector<Halfedge_index> insert_point_on_edge(Halfedge_index halfedge, Vertex_index new_vertex, CGL::Mesh& mesh) {
     try {
-        
-        //return new_halfedges;
-        
+        Halfedge_index he1 = CGAL::Euler::join_face(halfedge,mesh);
+        Face_index old_face = mesh.face(he1);
+        Halfedge_index he2 = mesh.next(he1);
+        Halfedge_index he3 = mesh.next(he2);
+        Halfedge_index he4 = mesh.next(he3);
+
+        // Store original vertices starting from he1
+        Vertex_index v1 = mesh.source(he1);
+        Vertex_index v2 = mesh.target(he1);
+        Vertex_index v3 = mesh.target(he2);
+        Vertex_index v4 = mesh.target(he3);
+
+        // Create new halfedges in CCW order around new_vertex
+        Halfedge_index new_he1 = mesh.add_edge(v2, new_vertex);
+        Halfedge_index new_he2 = mesh.add_edge(v3, new_vertex);
+        Halfedge_index new_he3 = mesh.add_edge(v4, new_vertex);
+        Halfedge_index new_he4 = mesh.add_edge(v1, new_vertex);
+
+        // Get opposite halfedges
+        Halfedge_index new_he1_opp = mesh.opposite(new_he1);
+        Halfedge_index new_he2_opp = mesh.opposite(new_he2);
+        Halfedge_index new_he3_opp = mesh.opposite(new_he3);
+        Halfedge_index new_he4_opp = mesh.opposite(new_he4);
+
+        // Create new faces
+        Face_index new_triangle1 = mesh.add_face();
+        Face_index new_triangle2 = mesh.add_face();
+        Face_index new_triangle3 = mesh.add_face();
+
+        // Set faces for halfedges in CCW order
+        // First triangle (reusing old_face)
+        mesh.set_face(he1, old_face);
+        mesh.set_face(new_he1, old_face);
+        mesh.set_face(new_he4_opp, old_face);
+
+        // Second triangle
+        mesh.set_face(he2, new_triangle1);
+        mesh.set_face(new_he2, new_triangle1);
+        mesh.set_face(new_he1_opp, new_triangle1);
+
+        // Third triangle
+        mesh.set_face(he3, new_triangle2);
+        mesh.set_face(new_he3, new_triangle2);
+        mesh.set_face(new_he2_opp, new_triangle2);
+
+        // Fourth triangle
+        mesh.set_face(he4, new_triangle3);
+        mesh.set_face(new_he4, new_triangle3);
+        mesh.set_face(new_he3_opp, new_triangle3);
+
+        // Set next relationships maintaining CCW order
+        // First triangle
+        mesh.set_next(he1, new_he1);
+        mesh.set_next(new_he1, new_he4_opp);
+        mesh.set_next(new_he4_opp, he1);
+
+        // Second triangle
+        mesh.set_next(he2, new_he2);
+        mesh.set_next(new_he2, new_he1_opp);
+        mesh.set_next(new_he1_opp, he2);
+
+        // Third triangle
+        mesh.set_next(he3, new_he3);
+        mesh.set_next(new_he3, new_he2_opp);
+        mesh.set_next(new_he2_opp, he3);
+
+        // Fourth triangle
+        mesh.set_next(he4, new_he4);
+        mesh.set_next(new_he4, new_he3_opp);
+        mesh.set_next(new_he3_opp, he4);
+
+        // Set halfedge for faces
+        mesh.set_halfedge(old_face, he1);
+        mesh.set_halfedge(new_triangle1, he2);
+        mesh.set_halfedge(new_triangle2, he3);
+        mesh.set_halfedge(new_triangle3, he4);
+
+        // Set halfedge for the new vertex
+        mesh.set_halfedge(new_vertex, new_he1);
+
+        // Debug verification
+        if (mesh.is_valid(false)) {
+            std::cout << "Triangulation completed successfully on edge" << std::endl;
+        } else {
+            std::cout << "Mesh validation failed after triangulation ON EDGE" << std::endl;
+        }
+
+        return {new_he1, new_he2, new_he3, new_he4};
     } catch (const std::exception& e) {
         std::cerr << "Error during point insertion on edge: " << e.what() << std::endl;
         throw;
