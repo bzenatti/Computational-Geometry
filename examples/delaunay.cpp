@@ -59,6 +59,7 @@ void insert_point(CGL::Mesh& mesh, CGL::Point2 vi);
 std::vector<Halfedge_index> insert_triangles(Halfedge_index halfedge, Vertex_index new_vertex, CGL::Mesh& mesh);
 std::vector<Halfedge_index> insert_point_on_edge(Halfedge_index halfedge, Vertex_index new_vertex, CGL::Mesh& mesh) ;
 void legalize_edge(Halfedge_index hedge, CGL::Mesh& mesh);
+void remove_super_triangle(CGL::Mesh& mesh, const std::vector<Vertex_index>& super_indexes);
 
 bool isEdgeShared(CGL::Mesh::Halfedge_index hedge, std::vector<CGL::Mesh::Face_index> triangle, CGL::Mesh mesh);
 
@@ -153,8 +154,6 @@ CGL::Mesh delaunay_triangulation(std::vector<CGL::Point2> vertices){
         super_hedges.push_back(delaunay_mesh.opposite(delaunay_mesh.halfedge(vertex))); 
     }
 
-    //insert_point(delaunay_mesh,vertices[0]);
-
     for (auto p = vertices.begin(); p != vertices.end(); ++p) {
         insert_point(delaunay_mesh,*p);
     }
@@ -163,57 +162,17 @@ CGL::Mesh delaunay_triangulation(std::vector<CGL::Point2> vertices){
 
     // CGL::print_mesh(delaunay_mesh);
 
-    // Remove super triangle
-    // First, collect all faces and edges to remove
-    std::vector<Face_index> faces_to_remove;
-    std::vector<Halfedge_index> halfedges_to_remove;
-
-    // Identify faces, edges, and halfedges connected to super triangle vertices
-    for (Face_index f : delaunay_mesh.faces()) {
-        bool connected_to_super = false;
-        for (Vertex_index v : delaunay_mesh.vertices_around_face(delaunay_mesh.halfedge(f))) {
-            if (std::find(super_indexes.begin(), super_indexes.end(), v) != super_indexes.end()) {
-                connected_to_super = true;
-                break;
-            }
-        }
-        if (connected_to_super) {
-            faces_to_remove.push_back(f);
-            Halfedge_index aux_hedge = delaunay_mesh.halfedge(f);
-            delaunay_mesh.set_face(aux_hedge,delaunay_mesh.null_face());
-            delaunay_mesh.set_face(delaunay_mesh.next(aux_hedge),delaunay_mesh.null_face());
-            delaunay_mesh.set_face(delaunay_mesh.prev(aux_hedge),delaunay_mesh.null_face());
-        }
-    }
-
-    //Remove faces
-    for (Face_index f : faces_to_remove) {
-        delaunay_mesh.remove_face(f);
-    }
-
-    for(Halfedge_index h : delaunay_mesh.halfedges()){
-        if(delaunay_mesh.face(h) == delaunay_mesh.null_face() && delaunay_mesh.face(delaunay_mesh.opposite(h)) == delaunay_mesh.null_face()){
-            CGAL::Euler::join_face(h,delaunay_mesh);
-        }
-    }
-
-    // Remove isolated vertices
-    for (Vertex_index v : super_indexes) {
-        delaunay_mesh.remove_vertex(v);
-    }
-    delaunay_mesh.collect_garbage();
-
-    CGAL::draw(delaunay_mesh);
+    remove_super_triangle(delaunay_mesh,super_indexes);
 
     for(unsigned i = 0;i < 3;i++)
         for(Halfedge_index h : delaunay_mesh.halfedges())
             legalize_edge(h,delaunay_mesh);
 
-    
     if (!delaunay_mesh.is_valid(false))
         printf("Deu ruim");
 
-    CGL::print_mesh_vertices(delaunay_mesh);
+    // CGL::print_mesh_vertices(delaunay_mesh);
+
     return delaunay_mesh;
 }
 
@@ -685,4 +644,48 @@ bool isOnTriangle(Point3 v1, Point3 v2, Point3 v3, Point3 pt) {
 
     // Point is inside if it's to the left of all edges
     return (left1 && left2 && left3);
+}
+
+void remove_super_triangle(CGL::Mesh& mesh, const std::vector<Vertex_index>& super_indexes) {
+    // First, collect all faces and edges to remove
+    std::vector<Face_index> faces_to_remove;
+
+    // Identify faces connected to super triangle vertices
+    for (Face_index f : mesh.faces()) {
+        bool connected_to_super = false;
+        for (Vertex_index v : mesh.vertices_around_face(mesh.halfedge(f))) {
+            if (std::find(super_indexes.begin(), super_indexes.end(), v) != super_indexes.end()) {
+                connected_to_super = true;
+                break;
+            }
+        }
+        if (connected_to_super) {
+            faces_to_remove.push_back(f);
+            Halfedge_index aux_hedge = mesh.halfedge(f);
+            mesh.set_face(aux_hedge, mesh.null_face());
+            mesh.set_face(mesh.next(aux_hedge), mesh.null_face());
+            mesh.set_face(mesh.prev(aux_hedge), mesh.null_face());
+        }
+    }
+
+    // Remove faces
+    for (Face_index f : faces_to_remove) {
+        mesh.remove_face(f);
+    }
+
+    // Join faces where both sides of an edge are null
+    for (Halfedge_index h : mesh.halfedges()) {
+        if (mesh.face(h) == mesh.null_face() && 
+            mesh.face(mesh.opposite(h)) == mesh.null_face()) {
+            CGAL::Euler::join_face(h, mesh);
+        }
+    }
+
+    // Remove super triangle vertices
+    for (Vertex_index v : super_indexes) {
+        mesh.remove_vertex(v);
+    }
+
+    // Clean up the mesh
+    mesh.collect_garbage();
 }
