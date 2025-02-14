@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
     /* Simple mesh with random vertices. */
     Mesh mesh_delaunay;
 
-    int nv = 1000;    /* Number of vertices. */
+    int nv = 30000;    /* Number of vertices. */
 
     std::vector<Point2>   point_vec;
     CGAL::Random         rand;
@@ -467,7 +467,7 @@ void legalize_edge(Halfedge_index hedge, CGL::Mesh& mesh) {
 
             // Debug verification after flip
             if (mesh.is_valid(false)) {
-                std::cout << "Edge flip completed successfully" << std::endl;
+                // std::cout << "Edge flip completed successfully" << std::endl;
             } else {
                 std::cout << "Mesh validation failed after flip" << std::endl;
             }
@@ -726,60 +726,79 @@ void add_border(CGL::Mesh& mesh) {
 
     Halfedge_index actual_hedge = first_hedge;
 
-    // Use a safety counter to prevent runaway loops in case something goes wrong
-    int iterations = 0;
-    const int maxIterations = 10000;
+    try {
+        int iterations = 0;
+        const int maxIterations = 10000;
 
-    while (iterations < maxIterations) {
-        iterations++;
+        while (iterations < maxIterations) {
+            iterations++;
 
-        // Get the next halfedges in the current border cycle
-        Halfedge_index next_hedge      = mesh.next(actual_hedge);
-        Halfedge_index next_next_hedge = mesh.next(next_hedge);
-        Halfedge_index next3_hedge     = mesh.next(next_next_hedge);
+            // Get the next halfedges in the current border cycle
+            Halfedge_index next_hedge = mesh.next(actual_hedge);
+            Halfedge_index next_next_hedge = mesh.next(next_hedge);
+            Halfedge_index next3_hedge = mesh.next(next_next_hedge);
 
-        // Get the three consecutive border points
-        Point3 p1 = mesh.point(mesh.target(actual_hedge));
-        Point3 p2 = mesh.point(mesh.target(next_hedge));
-        Point3 p3 = mesh.point(mesh.target(next_next_hedge));
+            // Get the three consecutive border points
+            Point3 p1 = mesh.point(mesh.target(actual_hedge));
+            Point3 p2 = mesh.point(mesh.target(next_hedge));
+            Point3 p3 = mesh.point(mesh.target(next_next_hedge));
 
-        printf("\n\nLOOP\n\n");
-        if (getOrientationTriangle(p1, p2, p3)) {
-            printf("\n\nENTROU\n\n");
-            // Add a new border edge between the target of mesh.next(next_hedge) and the target of actual_hedge.
-            Halfedge_index new_he     = mesh.add_edge(mesh.target(mesh.next(next_hedge)), mesh.target(actual_hedge));
-            Halfedge_index new_he_opp = mesh.opposite(new_he);
+            // Check if these points form a valid triangle
+            if (getOrientationTriangle(p1, p2, p3)) {
+                try {
+                    // Create new face and edge
+                    Face_index new_face = mesh.add_face();
+                    Halfedge_index new_he = mesh.add_edge(mesh.target(next_next_hedge),mesh.target(actual_hedge));
+                    Halfedge_index new_he_opp = mesh.opposite(new_he);
 
-            // Update the next pointers:
-            // For the outside (null-face) cycle:
-            mesh.set_next(actual_hedge, new_he_opp);
-            mesh.set_next(new_he_opp, next3_hedge);
-            // For the inside (new face) cycle:
-            mesh.set_next(next_next_hedge, new_he);
-            mesh.set_next(new_he, next_hedge);
+                    // Set face relationships
+                    mesh.set_face(next_hedge, new_face);
+                    mesh.set_face(next_next_hedge, new_face);
+                    mesh.set_face(new_he, new_face);
+                    mesh.set_halfedge(new_face, next_hedge);
 
-            Face_index new_face = mesh.add_face();
-            mesh.set_face(new_he, new_face);
-            mesh.set_face(new_he_opp, mesh.null_face());
-            mesh.set_halfedge(new_face, new_he);
+                    // Set next relationships
+                    mesh.set_next(next_hedge, next_next_hedge);
+                    mesh.set_next(next_next_hedge, new_he);
+                    mesh.set_next(new_he, next_hedge);
 
-            // Continue with the new border edge
-            actual_hedge = new_he_opp;
-        } else {
-            // Move along the border without modification
-            actual_hedge = next_hedge;
+                    // Update border cycle
+                    mesh.set_next(actual_hedge, new_he_opp);
+                    mesh.set_next(new_he_opp, next3_hedge);
+
+                    // Continue with the new border edge
+                    actual_hedge = new_he_opp;
+                } catch (const std::exception& e) {
+                    std::cerr << "Error creating face: " << e.what() << std::endl;
+                    break;
+                }
+            } else {
+                // Move along the border
+                actual_hedge = next_hedge;
+            }
+
+            // Check for cycle completion
+            Vertex_index current_vertex = mesh.target(actual_hedge);
+            if (visited.find(current_vertex) != visited.end()) {
+                break;
+            }
+            visited.insert(current_vertex);
+
+            // Validate mesh after each iteration
+            if (!mesh.is_valid(false)) {
+                std::cerr << "Invalid mesh state at iteration " << iterations << std::endl;
+                break;
+            }
         }
 
-        // Get the vertex at the end of the current border halfedge.
-        Vertex_index current_vertex = mesh.target(actual_hedge);
-        // If we’ve seen this vertex before, we assume we’ve completed the cycle.
-        if (visited.find(current_vertex) != visited.end()) {
-            break;
+        if (iterations >= maxIterations) {
+            std::cerr << "add_border: Reached maximum iterations" << std::endl;
         }
-        visited.insert(current_vertex);
+
+    } catch (const std::exception& e) {
+        std::cerr << "Error in add_border: " << e.what() << std::endl;
     }
 
-    if (iterations >= maxIterations) {
-        std::cerr << "add_border: Reached maximum iterations; something might be wrong." << std::endl;
-    }
+    // Final mesh cleanup
+    mesh.collect_garbage();
 }

@@ -72,77 +72,85 @@ void add_border(CGL::Mesh& mesh);
 
 bool isEdgeShared(CGL::Mesh::Halfedge_index hedge, std::vector<CGL::Mesh::Face_index> triangle, CGL::Mesh mesh);
 
+void computeBarycentrics(const Point3& p,
+    const Point3& v0, const Point3& v1, const Point3& v2,
+    double &lambda0, double &lambda1, double &lambda2);
+cv::Mat rasterizeMesh(const Mesh& mesh, const cv::Mat& inputImg);
+
 using namespace cv;
 
 cv::Mat convert_to_pgm(const std::string& image_path, const std::string& output_path);
 
-
 int main(int argc, char* argv[]) {
-    std::string image_path = "./baboon.jpg";
-    std::string output_path = "./baboon.pgm";
+    try {
+        std::string image_path = "./baboon.jpg";
+        std::string output_path = "./baboon.pgm";
 
-    cv::Mat img_pgm  = convert_to_pgm(image_path, output_path);
-
-
-    if (!img_pgm.empty()) {
+        cv::Mat img_pgm = convert_to_pgm(image_path, output_path);
+        if (img_pgm.empty()) {
+            std::cout << "Image conversion failed." << std::endl;
+            return EXIT_FAILURE;
+        }
         std::cout << "Image conversion successful." << std::endl;
-    } else {
-        std::cout << "Image conversion failed." << std::endl;
+
+        // Generate random points (simulate vertices) over a 512x512 domain.
+        int nv = 30000;    /* Number of vertices. */
+        std::vector<Point2> point_vec;
+        CGAL::Random rand;
+        CGAL::copy_n_unique(Point_generator(512), nv, std::back_inserter(point_vec));
+
+        // Add the four image corners so the triangulation covers the entire image.
+        point_vec.push_back(Point2(0, 0));
+        point_vec.push_back(Point2(img_pgm.cols - 1, 0));
+        point_vec.push_back(Point2(0, img_pgm.rows - 1));
+        point_vec.push_back(Point2(img_pgm.cols - 1, img_pgm.rows - 1));
+
+        // Compute the Delaunay triangulation to obtain a mesh.
+        Mesh mesh = delaunay_triangulation(point_vec);
+
+        // Rasterize the mesh: for each triangle, interpolate colors from the input image.
+        cv::Mat rasterized = rasterizeMesh(mesh, img_pgm);
+
+        // Display the original and rasterized images.
+        cv::imshow("Original Image", img_pgm);
+        cv::imshow("Rasterized Mesh", rasterized);
+        cv::waitKey(0);
+    } catch (const std::exception& e) {
+        std::cout << "Exception in main: " << e.what() << std::endl;
+        return EXIT_FAILURE;
     }
-
-    /* Vector to store points. */
-    std::vector<Point3> pts;
-    std::vector<Vertex_index> indexes;
-
-    /* Simple mesh with random vertices. */
-    Mesh mesh_delaunay;
-
-    int nv = 20000;    /* Number of vertices. */
-
-    std::vector<Point2>   point_vec;
-    CGAL::Random         rand;
-
-    rand.get_seed();
-
-    
-    //generate for representing 512x512 pixels
-    CGAL::copy_n_unique(Point_generator(512), nv, std::back_inserter(point_vec));
-
-    Mesh mesh;
-    mesh = delaunay_triangulation(point_vec);
-
-    // std::cout << mesh.halfedge(mesh.null_face());
-
-    // CGL::print_mesh(mesh);
-    CGAL::draw(mesh);
-   
     return EXIT_SUCCESS;
-
-    return 0;
 }
+
 
 cv::Mat convert_to_pgm(const std::string& image_path, const std::string& output_path) {
     // Check if file exists
     struct stat buffer;
     if (stat(image_path.c_str(), &buffer) != 0) {
         std::cout << "File does not exist: " << image_path << std::endl;
-        return cv::Mat(); // Return empty Mat
-    } else {
-        std::cout << "File exists: " << image_path << std::endl;
-        // Check file permissions
-        std::cout << "File permissions: " << std::oct << (buffer.st_mode & 0777) << std::endl;
+        return cv::Mat();
     }
 
     // Read image in color
     cv::Mat img = cv::imread(image_path, cv::IMREAD_COLOR);
     if (img.empty()) {
         std::cout << "Could not read the image: " << image_path << std::endl;
-        return cv::Mat(); // Return empty Mat
+        return cv::Mat();
     }
 
-    // Convert to grayscale (PGM format requires grayscale)
-    cv::Mat gray_img;
-    cv::cvtColor(img, gray_img, cv::COLOR_BGR2GRAY);
+    std::cout << "Original loaded image size: " << img.size() << std::endl;
+
+     // Convert to grayscale
+     cv::Mat gray_img;
+     cv::cvtColor(img, gray_img, cv::COLOR_BGR2GRAY);
+ 
+    // Resize to 512x512 if it's not already that size
+    if (gray_img.size() != cv::Size(512, 512)) {
+        cv::Mat resized;
+        cv::resize(gray_img, resized, cv::Size(512, 512));
+        gray_img = resized;
+        std::cout << "Resized image to 512x512" << std::endl;
+    }
 
     // Save the grayscale image in PGM format
     if (cv::imwrite(output_path, gray_img)) {
@@ -151,9 +159,8 @@ cv::Mat convert_to_pgm(const std::string& image_path, const std::string& output_
         std::cout << "Failed to save PGM file: " << output_path << std::endl;
     }
 
-    return gray_img; // Return the grayscale image
+    return gray_img;
 }
-
 
 std::vector<Point2> createSuperTriangle(const std::vector<Point2>& points) {
     // Find bounding box
@@ -216,9 +223,11 @@ CGL::Mesh delaunay_triangulation(std::vector<CGL::Point2> vertices){
         // For some reason, delaunay_mesh.halfedge(vertex) returns the halfedge in the CW order
         super_hedges.push_back(delaunay_mesh.opposite(delaunay_mesh.halfedge(vertex))); 
     }
-
-    for (auto p = vertices.begin(); p != vertices.end(); ++p) {
+    unsigned i = 0;
+    for (auto p = vertices.begin(); p != vertices.end(); ++p, i++) {
         insert_point(delaunay_mesh,*p);
+        if(i%500 == 0)
+            std::cout << "i = " << i << std::endl;
     }
 
     std::cout << "Ended inserting points" << std::endl;
@@ -229,8 +238,9 @@ CGL::Mesh delaunay_triangulation(std::vector<CGL::Point2> vertices){
 
     // CGAL::draw(delaunay_mesh);
     add_border(delaunay_mesh);
+    delaunay_mesh.collect_garbage();
 
-    for(unsigned i = 0;i < 5;i++)
+    for(i = 0;i < 5;i++)
         for(Halfedge_index h : delaunay_mesh.halfedges())
             legalize_edge(h,delaunay_mesh);
 
@@ -383,7 +393,7 @@ std::vector<Halfedge_index> insert_triangles(Halfedge_index halfedge, Vertex_ind
 
         // Debug verification
         if (mesh.is_valid(false)) {
-            std::cout << "Triangulation completed successfully" << std::endl;
+            // std::cout << "Triangulation completed successfully" << std::endl;
         } else {
             std::cout << "Mesh validation failed after triangulation" << std::endl;
         }
@@ -482,7 +492,7 @@ std::vector<Halfedge_index> insert_point_on_edge(Halfedge_index halfedge, Vertex
 
         // Debug verification
         if (mesh.is_valid(false)) {
-            std::cout << "Triangulation completed successfully on edge" << std::endl;
+            // std::cout << "Triangulation completed successfully on edge" << std::endl;
         } else {
             std::cout << "Mesh validation failed after triangulation ON EDGE" << std::endl;
         }
@@ -528,7 +538,7 @@ void legalize_edge(Halfedge_index hedge, CGL::Mesh& mesh) {
 
             // Debug verification after flip
             if (mesh.is_valid(false)) {
-                std::cout << "Edge flip completed successfully" << std::endl;
+                // std::cout << "Edge flip completed successfully" << std::endl;
             } else {
                 std::cout << "Mesh validation failed after flip" << std::endl;
             }
@@ -652,6 +662,9 @@ std::vector<CGL::Mesh::Vertex_index> get_face_vertices(CGL::Mesh::Face_index fac
     CGL::Mesh::Halfedge_index actual_hedge = first_hedge;
 
     std::vector<CGL::Mesh::Vertex_index> triangle_vertices; //Vector that stores all vertices of given triangle
+
+    if(face == polygon.null_face())
+        printf("\n\nAQUI\n\n");
 
         do {
             //saves on triangle_vertices the vertices
@@ -785,61 +798,165 @@ void add_border(CGL::Mesh& mesh) {
     visited.insert(start_vertex);
 
     Halfedge_index actual_hedge = first_hedge;
+    CGL::print_mesh_faces(mesh);
 
-    // Use a safety counter to prevent runaway loops in case something goes wrong
-    int iterations = 0;
-    const int maxIterations = 10000;
+    try {
+        int iterations = 0;
+        const int maxIterations = 10000;
 
-    while (iterations < maxIterations) {
-        iterations++;
+        while (iterations < maxIterations) {
+            iterations++;
 
-        // Get the next halfedges in the current border cycle
-        Halfedge_index next_hedge      = mesh.next(actual_hedge);
-        Halfedge_index next_next_hedge = mesh.next(next_hedge);
-        Halfedge_index next3_hedge     = mesh.next(next_next_hedge);
+            // Get the next halfedges in the current border cycle
+            Halfedge_index next_hedge = mesh.next(actual_hedge);
+            Halfedge_index next_next_hedge = mesh.next(next_hedge);
+            Halfedge_index next3_hedge = mesh.next(next_next_hedge);
 
-        // Get the three consecutive border points
-        Point3 p1 = mesh.point(mesh.target(actual_hedge));
-        Point3 p2 = mesh.point(mesh.target(next_hedge));
-        Point3 p3 = mesh.point(mesh.target(next_next_hedge));
+            // Get the three consecutive border points
+            Point3 p1 = mesh.point(mesh.target(actual_hedge));
+            Point3 p2 = mesh.point(mesh.target(next_hedge));
+            Point3 p3 = mesh.point(mesh.target(next_next_hedge));
 
-        printf("\n\nLOOP\n\n");
-        if (getOrientationTriangle(p1, p2, p3)) {
-            printf("\n\nENTROU\n\n");
-            // Add a new border edge between the target of mesh.next(next_hedge) and the target of actual_hedge.
-            Halfedge_index new_he     = mesh.add_edge(mesh.target(mesh.next(next_hedge)), mesh.target(actual_hedge));
-            Halfedge_index new_he_opp = mesh.opposite(new_he);
+            // Check if these points form a valid triangle
+            if (getOrientationTriangle(p1, p2, p3)) {
+                try {
+                    // Create new face and edge
+                    Face_index new_face = mesh.add_face();
+                    Halfedge_index new_he = mesh.add_edge(mesh.target(next_next_hedge),mesh.target(actual_hedge));
+                    Halfedge_index new_he_opp = mesh.opposite(new_he);
 
-            // Update the next pointers:
-            // For the outside (null-face) cycle:
-            mesh.set_next(actual_hedge, new_he_opp);
-            mesh.set_next(new_he_opp, next3_hedge);
-            // For the inside (new face) cycle:
-            mesh.set_next(next_next_hedge, new_he);
-            mesh.set_next(new_he, next_hedge);
+                    // Set face relationships
+                    mesh.set_face(next_hedge, new_face);
+                    mesh.set_face(next_next_hedge, new_face);
+                    mesh.set_face(new_he, new_face);
+                    mesh.set_halfedge(new_face, next_hedge);
 
-            Face_index new_face = mesh.add_face();
-            mesh.set_face(new_he, new_face);
-            mesh.set_face(new_he_opp, mesh.null_face());
-            mesh.set_halfedge(new_face, new_he);
+                    // Set next relationships
+                    mesh.set_next(next_hedge, next_next_hedge);
+                    mesh.set_next(next_next_hedge, new_he);
+                    mesh.set_next(new_he, next_hedge);
 
-            // Continue with the new border edge
-            actual_hedge = new_he_opp;
-        } else {
-            // Move along the border without modification
-            actual_hedge = next_hedge;
+                    // Update border cycle
+                    mesh.set_next(actual_hedge, new_he_opp);
+                    mesh.set_next(new_he_opp, next3_hedge);
+
+                    // Continue with the new border edge
+                    actual_hedge = new_he_opp;
+                } catch (const std::exception& e) {
+                    std::cerr << "Error creating face: " << e.what() << std::endl;
+                    break;
+                }
+            } else {
+                // Move along the border
+                actual_hedge = next_hedge;
+            }
+
+            // Check for cycle completion
+            Vertex_index current_vertex = mesh.target(actual_hedge);
+            if (visited.find(current_vertex) != visited.end()) {
+                break;
+            }
+            visited.insert(current_vertex);
+
+            // Validate mesh after each iteration
+            if (!mesh.is_valid(false)) {
+                std::cerr << "Invalid mesh state at iteration " << iterations << std::endl;
+                break;
+            }
         }
 
-        // Get the vertex at the end of the current border halfedge.
-        Vertex_index current_vertex = mesh.target(actual_hedge);
-        // If we’ve seen this vertex before, we assume we’ve completed the cycle.
-        if (visited.find(current_vertex) != visited.end()) {
-            break;
+        if (iterations >= maxIterations) {
+            std::cerr << "add_border: Reached maximum iterations" << std::endl;
         }
-        visited.insert(current_vertex);
+
+    } catch (const std::exception& e) {
+        std::cerr << "Error in add_border: " << e.what() << std::endl;
     }
 
-    if (iterations >= maxIterations) {
-        std::cerr << "add_border: Reached maximum iterations; something might be wrong." << std::endl;
+    // Validate mesh after each iteration
+    if (!mesh.is_valid(false)) {
+        std::cout << "Invalid mesh state after adding borders" << std::endl;
+        
     }
+    // Final mesh cleanup
+    mesh.collect_garbage();
+    CGAL::draw(mesh);
+    CGL::print_mesh_faces(mesh);
+}
+
+//---------------------------------------------------------------------
+// Helper: Compute barycentric coordinates for point p in triangle (v0,v1,v2)
+void computeBarycentrics(const Point3& p,
+                         const Point3& v0, const Point3& v1, const Point3& v2,
+                         double &lambda0, double &lambda1, double &lambda2)
+{
+    // Using the standard formula:
+    double denom = (v1.x() - v0.x()) * (v2.y() - v0.y()) - (v2.x() - v0.x()) * (v1.y() - v0.y());
+    lambda0 = ((v1.x() - p.x()) * (v2.y() - p.y()) - (v2.x() - p.x()) * (v1.y() - p.y())) / denom;
+    lambda1 = ((v2.x() - p.x()) * (v0.y() - p.y()) - (v0.x() - p.x()) * (v2.y() - p.y())) / denom;
+    lambda2 = 1.0 - lambda0 - lambda1;
+}
+
+//---------------------------------------------------------------------
+// Rasterize the mesh using barycentric interpolation.
+cv::Mat rasterizeMesh(const Mesh& mesh, const cv::Mat& inputImg)
+{
+    // Create an output image of the same size and type as the input.
+    cv::Mat output = cv::Mat::zeros(inputImg.size(), inputImg.type());
+
+    // Loop over each face (triangle) in the mesh.
+    for (Face_index f : mesh.faces())
+    {
+        // Get the three vertex indices of this face.
+        std::vector<Vertex_index> verts = get_face_vertices(f, mesh);
+        if (verts.size() != 3) continue; // skip non-triangular faces
+
+        // Get the triangle vertices (assume Point2 has members .x and .y)
+        Point3 v0 = mesh.point(verts[0]);
+        Point3 v1 = mesh.point(verts[1]);
+        Point3 v2 = mesh.point(verts[2]);
+
+        // Compute the axis-aligned bounding box of the triangle.
+        double min_x = std::min({ v0.x(), v1.x(), v2.x() });
+        double max_x = std::max({ v0.x(), v1.x(), v2.x() });
+        double min_y = std::min({ v0.y(), v1.y(), v2.y() });
+        double max_y = std::max({ v0.y(), v1.y(), v2.y() });
+
+        int box_min_x = std::max(0, (int)std::floor(min_x));
+        int box_max_x = std::min(inputImg.cols - 1, (int)std::ceil(max_x));
+        int box_min_y = std::max(0, (int)std::floor(min_y));
+        int box_max_y = std::min(inputImg.rows - 1, (int)std::ceil(max_y));
+
+        // Get the vertex colors from the input image by sampling at their (rounded) positions.
+        // (Assuming the image is single channel.)
+        uchar c0 = inputImg.at<uchar>( std::min(inputImg.rows - 1, std::max(0, (int)std::round(v0.y()))),
+                                          std::min(inputImg.cols - 1, std::max(0, (int)std::round(v0.x()))) );
+        uchar c1 = inputImg.at<uchar>( std::min(inputImg.rows - 1, std::max(0, (int)std::round(v1.y()))),
+                                          std::min(inputImg.cols - 1, std::max(0, (int)std::round(v1.x()))) );
+        uchar c2 = inputImg.at<uchar>( std::min(inputImg.rows - 1, std::max(0, (int)std::round(v2.y()))),
+                                          std::min(inputImg.cols - 1, std::max(0, (int)std::round(v2.x()))) );
+
+        // Loop over all pixels in the bounding box.
+        for (int y = box_min_y; y <= box_max_y; ++y)
+        {
+            for (int x = box_min_x; x <= box_max_x; ++x)
+            {
+                // Use the pixel center.
+                Point3 p((double)x + 0.5, (double)y + 0.5,0.0);
+                double lambda0, lambda1, lambda2;
+                computeBarycentrics(p, v0, v1, v2, lambda0, lambda1, lambda2);
+
+                // Check if the point is inside the triangle (allow a small epsilon tolerance).
+                const double eps = 1e-6;
+                if (lambda0 >= -eps && lambda1 >= -eps && lambda2 >= -eps)
+                {
+                    // Compute the interpolated color.
+                    double pixel_val = lambda0 * c0 + lambda1 * c1 + lambda2 * c2;
+                    output.at<uchar>(y, x) = (uchar)std::round(pixel_val);
+                }
+            }
+        }
+    }
+
+    return output;
 }
