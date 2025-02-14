@@ -23,7 +23,7 @@ set(CGL_DRAW_INCLUDE ${CGL_INCLUDE}/Draw)
 set(CGL_EXAMPLES ${PROJECT_SOURCE_DIR}/examples)
 
 
-add_executable(triangulate_image ${CGL_EXAMPLES}/triangulate_image.cpp)
+add_executable(triangulate_image ${CGL_EXAMPLES}/triangulate_image.cpp ${CGL_DRAW_SOURCE}/DrawPoints2.cpp ${CGL_SOURCE}/Random.cpp ${CGL_SOURCE}/IO.cpp ${CGL_SOURCE}/Partition.cpp ${CGL_SOURCE}/Primitives.cpp ${CGL_DRAW_SOURCE}/DrawSegments3.cpp)
 target_include_directories(triangulate_image PRIVATE ${CGL_INCLUDE} ${CGL_DRAW_INCLUDE} ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(triangulate_image PUBLIC CGAL::CGAL_Basic_viewer ${OpenCV_LIBS})
 

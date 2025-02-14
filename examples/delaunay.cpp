@@ -16,7 +16,6 @@
 #include <IO.h>
 
 #define PI 3.14159265358979323846
-#define MAXN 100
 
 typedef CGAL::Creator_uniform_2<int, CGL::Point2>        Creator;
 typedef CGAL::Random_points_in_square_2<CGL::Point2, Creator> Point_generator;
@@ -38,6 +37,8 @@ float getDeterminant(std::vector<CGL::Point2> pts);
 double getDeterminant4x4(double matrix[4][4], int n);
 
 bool getOrientationTriangle(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3);
+//Returns CW if collinear:
+bool getOrientationTriangle(CGL::Point3 p1, CGL::Point3 p2,CGL::Point3 p3);
 float getTriangleArea(std::vector<CGL::Point2> pts);
 
 double dotProduct(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3,CGL::Point2 p4); // p1p2 and p3p4
@@ -60,6 +61,7 @@ std::vector<Halfedge_index> insert_triangles(Halfedge_index halfedge, Vertex_ind
 std::vector<Halfedge_index> insert_point_on_edge(Halfedge_index halfedge, Vertex_index new_vertex, CGL::Mesh& mesh) ;
 void legalize_edge(Halfedge_index hedge, CGL::Mesh& mesh);
 void remove_super_triangle(CGL::Mesh& mesh, const std::vector<Vertex_index>& super_indexes);
+void add_border(CGL::Mesh& mesh);
 
 bool isEdgeShared(CGL::Mesh::Halfedge_index hedge, std::vector<CGL::Mesh::Face_index> triangle, CGL::Mesh mesh);
 
@@ -164,7 +166,10 @@ CGL::Mesh delaunay_triangulation(std::vector<CGL::Point2> vertices){
 
     remove_super_triangle(delaunay_mesh,super_indexes);
 
-    for(unsigned i = 0;i < 3;i++)
+    // CGAL::draw(delaunay_mesh);
+    add_border(delaunay_mesh);
+
+    for(unsigned i = 0;i < 5;i++)
         for(Halfedge_index h : delaunay_mesh.halfedges())
             legalize_edge(h,delaunay_mesh);
 
@@ -547,6 +552,14 @@ bool getOrientationTriangle(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3){
     return (getDeterminant(p1,p2,p3) >= 0);
 }
 
+
+bool getOrientationTriangle(CGL::Point3 p1, CGL::Point3 p2,CGL::Point3 p3){
+    bool left1 = CGL::Left(p1, p2, p3);
+    bool left2 = CGL::Left(p2, p3, p1);
+    bool left3 = CGL::Left(p3, p1, p2);
+    return (left1 && left2 && left3);
+}
+
 // Considering two vectors, p1p2==u and p3p4==v
 double dotProduct(CGL::Point3 p1, CGL::Point3 p2,CGL::Point3 p3,CGL::Point3 p4) {
     int ux = p2.x() - p1.x(), uy = p2.y() - p1.y();
@@ -688,4 +701,85 @@ void remove_super_triangle(CGL::Mesh& mesh, const std::vector<Vertex_index>& sup
 
     // Clean up the mesh
     mesh.collect_garbage();
+}
+
+void add_border(CGL::Mesh& mesh) {
+    // Find a border halfedge (one with a null face)
+    Halfedge_index first_hedge;
+    bool found_border = false;
+    for (Halfedge_index h : mesh.halfedges()) {
+        if (mesh.face(h) == mesh.null_face()) {
+            first_hedge = h;
+            found_border = true;
+            break;
+        }
+    }
+    if (!found_border) {
+        std::cout << "No border halfedge found" << std::endl;
+        return;
+    }
+
+    // Use a set to record visited border vertices (using target vertices)
+    std::set<Vertex_index> visited;
+    Vertex_index start_vertex = mesh.target(first_hedge);
+    visited.insert(start_vertex);
+
+    Halfedge_index actual_hedge = first_hedge;
+
+    // Use a safety counter to prevent runaway loops in case something goes wrong
+    int iterations = 0;
+    const int maxIterations = 10000;
+
+    while (iterations < maxIterations) {
+        iterations++;
+
+        // Get the next halfedges in the current border cycle
+        Halfedge_index next_hedge      = mesh.next(actual_hedge);
+        Halfedge_index next_next_hedge = mesh.next(next_hedge);
+        Halfedge_index next3_hedge     = mesh.next(next_next_hedge);
+
+        // Get the three consecutive border points
+        Point3 p1 = mesh.point(mesh.target(actual_hedge));
+        Point3 p2 = mesh.point(mesh.target(next_hedge));
+        Point3 p3 = mesh.point(mesh.target(next_next_hedge));
+
+        printf("\n\nLOOP\n\n");
+        if (getOrientationTriangle(p1, p2, p3)) {
+            printf("\n\nENTROU\n\n");
+            // Add a new border edge between the target of mesh.next(next_hedge) and the target of actual_hedge.
+            Halfedge_index new_he     = mesh.add_edge(mesh.target(mesh.next(next_hedge)), mesh.target(actual_hedge));
+            Halfedge_index new_he_opp = mesh.opposite(new_he);
+
+            // Update the next pointers:
+            // For the outside (null-face) cycle:
+            mesh.set_next(actual_hedge, new_he_opp);
+            mesh.set_next(new_he_opp, next3_hedge);
+            // For the inside (new face) cycle:
+            mesh.set_next(next_next_hedge, new_he);
+            mesh.set_next(new_he, next_hedge);
+
+            Face_index new_face = mesh.add_face();
+            mesh.set_face(new_he, new_face);
+            mesh.set_face(new_he_opp, mesh.null_face());
+            mesh.set_halfedge(new_face, new_he);
+
+            // Continue with the new border edge
+            actual_hedge = new_he_opp;
+        } else {
+            // Move along the border without modification
+            actual_hedge = next_hedge;
+        }
+
+        // Get the vertex at the end of the current border halfedge.
+        Vertex_index current_vertex = mesh.target(actual_hedge);
+        // If we’ve seen this vertex before, we assume we’ve completed the cycle.
+        if (visited.find(current_vertex) != visited.end()) {
+            break;
+        }
+        visited.insert(current_vertex);
+    }
+
+    if (iterations >= maxIterations) {
+        std::cerr << "add_border: Reached maximum iterations; something might be wrong." << std::endl;
+    }
 }
