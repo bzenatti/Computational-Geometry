@@ -37,9 +37,6 @@ float getDeterminant(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3);
 float getDeterminant(std::vector<CGL::Point2> pts);
 double getDeterminant4x4(double matrix[4][4], int n);
 
-bool inCircle(CGL::Point3 a, CGL::Point3 b,CGL::Point3 c,CGL::Point3 d);
-
-bool getOrientation(CGL::Polygon2 P);
 bool getOrientationTriangle(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3);
 float getTriangleArea(std::vector<CGL::Point2> pts);
 
@@ -47,26 +44,22 @@ double dotProduct(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3,CGL::Point2 p4);
 double vectorMagnitude(CGL::Point2 p1, CGL::Point2 p2);
 double angleBetween(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3,CGL::Point2 p4);
 
-bool isVerticeConvex(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3,bool polygonOrientation);
-bool isVerticeEar(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3, CGL::Polygon2 P);
-
 bool isInsideTriangle(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3, CGL::Point2 point);
 bool isInsideTriangle(Point3 v1, Point3 v2, Point3 v3, Point3 pt) ;
 bool isOnTriangle(Point3 v1, Point3 v2, Point3 v3, Point3 pt);
 
-void edge_flip(CGL::Mesh::Halfedge_index& e, CGL::Mesh& polygon);
-
 std::vector<CGL::Mesh::Vertex_index> get_face_vertices(CGL::Mesh::Face_index face, CGL::Mesh polygon);
 std::vector<CGL::Mesh::Halfedge_index> get_face_halfedges(CGL::Mesh::Face_index face, CGL::Mesh polygon);
 
-bool can_flip(CGL::Mesh::Halfedge_index initial_hedge, CGL::Mesh polygon);
-
+//Delaunay
+bool inCircle(CGL::Point3 a, CGL::Point3 b,CGL::Point3 c,CGL::Point3 d);
 std::vector<CGL::Point2>  createSuperTriangle(const std::vector<CGL::Point2>& points);
 CGL::Mesh delaunay_triangulation(std::vector<CGL::Point2> mesh_vertices);
 void insert_point(CGL::Mesh& mesh, CGL::Point2 vi);
 std::vector<Halfedge_index> insert_triangles(Halfedge_index halfedge, Vertex_index new_vertex, CGL::Mesh& mesh);
 std::vector<Halfedge_index> insert_point_on_edge(Halfedge_index halfedge, Vertex_index new_vertex, CGL::Mesh& mesh) ;
 void legalize_edge(Halfedge_index hedge, CGL::Mesh& mesh);
+
 bool isEdgeShared(CGL::Mesh::Halfedge_index hedge, std::vector<CGL::Mesh::Face_index> triangle, CGL::Mesh mesh);
 
 int main(int argc, char* argv[]) {
@@ -78,7 +71,7 @@ int main(int argc, char* argv[]) {
     /* Simple mesh with random vertices. */
     Mesh mesh_delaunay;
 
-    int nv = 50;    /* Number of vertices. */
+    int nv = 1000;    /* Number of vertices. */
 
     std::vector<Point2>   point_vec;
     CGAL::Random         rand;
@@ -87,25 +80,12 @@ int main(int argc, char* argv[]) {
 
     
     //generate for representing 512x512 pixels
-    CGAL::copy_n_unique(Point_generator(20), nv, std::back_inserter(point_vec));
-
-    /*     
-    for (const auto& point : point_set) {
-        std::cout << point << std::endl;
-    }
-    */
+    CGAL::copy_n_unique(Point_generator(512), nv, std::back_inserter(point_vec));
 
     Mesh mesh;
-    
-    int i = 0 ;
-
-    
-
     mesh = delaunay_triangulation(point_vec);
 
     // CGL::print_mesh(mesh);
-
-    //printf("teste2");
     CGAL::draw(mesh);
    
     return EXIT_SUCCESS;
@@ -171,8 +151,6 @@ CGL::Mesh delaunay_triangulation(std::vector<CGL::Point2> vertices){
     for(Vertex_index vertex : super_indexes){
         // For some reason, delaunay_mesh.halfedge(vertex) returns the halfedge in the CW order
         super_hedges.push_back(delaunay_mesh.opposite(delaunay_mesh.halfedge(vertex))); 
-        // std::cout << delaunay_mesh.opposite(delaunay_mesh.halfedge(vertex)) << 
-        // delaunay_mesh.face(delaunay_mesh.opposite(delaunay_mesh.halfedge(vertex))) << std::endl;
     }
 
     //insert_point(delaunay_mesh,vertices[0]);
@@ -181,14 +159,16 @@ CGL::Mesh delaunay_triangulation(std::vector<CGL::Point2> vertices){
         insert_point(delaunay_mesh,*p);
     }
 
-    CGL::print_mesh(delaunay_mesh);
+    std::cout << "Ended inserting points" << std::endl;
+
+    // CGL::print_mesh(delaunay_mesh);
 
     // Remove super triangle
     // First, collect all faces and edges to remove
     std::vector<Face_index> faces_to_remove;
-    std::vector<Edge_index> edges_to_remove;
+    std::vector<Halfedge_index> halfedges_to_remove;
 
-    // Identify faces and edges connected to super triangle vertices
+    // Identify faces, edges, and halfedges connected to super triangle vertices
     for (Face_index f : delaunay_mesh.faces()) {
         bool connected_to_super = false;
         for (Vertex_index v : delaunay_mesh.vertices_around_face(delaunay_mesh.halfedge(f))) {
@@ -199,21 +179,41 @@ CGL::Mesh delaunay_triangulation(std::vector<CGL::Point2> vertices){
         }
         if (connected_to_super) {
             faces_to_remove.push_back(f);
+            Halfedge_index aux_hedge = delaunay_mesh.halfedge(f);
+            delaunay_mesh.set_face(aux_hedge,delaunay_mesh.null_face());
+            delaunay_mesh.set_face(delaunay_mesh.next(aux_hedge),delaunay_mesh.null_face());
+            delaunay_mesh.set_face(delaunay_mesh.prev(aux_hedge),delaunay_mesh.null_face());
         }
     }
 
-    // Remove faces
+    //Remove faces
     for (Face_index f : faces_to_remove) {
         delaunay_mesh.remove_face(f);
     }
 
-    // Remove super triangle vertices (this will also remove connected edges)
+    for(Halfedge_index h : delaunay_mesh.halfedges()){
+        if(delaunay_mesh.face(h) == delaunay_mesh.null_face() && delaunay_mesh.face(delaunay_mesh.opposite(h)) == delaunay_mesh.null_face()){
+            CGAL::Euler::join_face(h,delaunay_mesh);
+        }
+    }
+
+    // Remove isolated vertices
     for (Vertex_index v : super_indexes) {
         delaunay_mesh.remove_vertex(v);
     }
+    delaunay_mesh.collect_garbage();
 
-    CGL::print_mesh(delaunay_mesh);
+    CGAL::draw(delaunay_mesh);
 
+    for(unsigned i = 0;i < 3;i++)
+        for(Halfedge_index h : delaunay_mesh.halfedges())
+            legalize_edge(h,delaunay_mesh);
+
+    
+    if (!delaunay_mesh.is_valid(false))
+        printf("Deu ruim");
+
+    CGL::print_mesh_vertices(delaunay_mesh);
     return delaunay_mesh;
 }
 
@@ -236,10 +236,6 @@ void insert_point(CGL::Mesh& mesh, CGL::Point2 vi){
         Point3 t2 = mesh.point(mesh.target(next_he));
         Point3 t3 = mesh.point(mesh.target(next_next_he));
 
-        // std::cout << "Triangle vertices:" << std::endl;
-        // std::cout << "t1: " << t1 << std::endl;
-        // std::cout << "t2: " << t2 << std::endl;
-        // std::cout << "t3: " << t3 << std::endl;
 
         if(isInsideTriangle(t1, t2, t3, p3)){
             boundary_triangle = f;
@@ -260,14 +256,12 @@ void insert_point(CGL::Mesh& mesh, CGL::Point2 vi){
     }
 
     if(!isInside){
-        // printf("this points is on a edge, need to do");
         std::vector<Halfedge_index> new_hedges = insert_point_on_edge(point_halfedge,new_vertice,mesh);
 
         legalize_edge(mesh.prev(new_hedges[0]), mesh);
         legalize_edge(mesh.prev(new_hedges[1]), mesh);
         legalize_edge(mesh.prev(new_hedges[2]), mesh);
         legalize_edge(mesh.prev(new_hedges[3]), mesh);
-        
     }
     else{
         Halfedge_index halfedge = mesh.halfedge(boundary_triangle);
@@ -529,13 +523,11 @@ bool isEdgeShared(Halfedge_index hedge, std::vector<Face_index> triangle, CGL::M
     return false;
 }
 
-
 //This function receives as parameter three points
 float getDeterminant(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3){
     // Formula to get determinant with the points
     return ((p2.x() - p1.x())*(p3.y() - p1.y()) - (p2.y() - p1.y())*(p3.x() - p1.x()));
 }
-
 
 //This function receives as parameter a triangle in a Point2 Vector
 float getDeterminant(std::vector<CGL::Point2> pts){
@@ -590,21 +582,6 @@ double getDeterminant4x4(double matrix[4][4], int n = 4){
     }
     return det;
 }
-// True for counterclockwise and false for clockwise
-// Default: straight line is set for counterclockwise
-bool getOrientation(CGL::Polygon2 P){
-
-    int totalSum = 0;
-    size_t P_size = P.size();
-    for (size_t i = 0; i < P_size; i++) {
-        // % operation for when get to i == P_size - 1, when adds 1 or 2, go to 0 and 1
-        int p0 = i, p1 = ((i+1) % P_size);
-        //If totalSum is positive, is cw
-        totalSum += ((P[p1].x() - P[p0].x()) * (P[p1].y() + P[p0].y()) );
-    }
-
-    return !(totalSum >= 0);
-}
 
 //This function receives as parameter three points
 bool getOrientationTriangle(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3){
@@ -628,13 +605,6 @@ double angleBetween(CGL::Point3 p1, CGL::Point3 p2,CGL::Point3 p3,CGL::Point3 p4
     return std::acos((dotProduct(p1,p2,p3,p4))/(vectorMagnitude(p1,p2) * vectorMagnitude(p3,p4)));
 }
 
-bool isVerticeConvex(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3,bool polygonOrientation){
-    if(getOrientationTriangle(p1,p2,p3) == polygonOrientation)
-        return true;
-    else 
-        return false;
-}
-
 // Returns true if point is inside triangle
 bool isInsideTriangle(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3, CGL::Point2 point){
     bool orientation1 = getOrientationTriangle(p1,p2,point);
@@ -642,24 +612,6 @@ bool isInsideTriangle(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3, CGL::Point2
     bool orientation3 = getOrientationTriangle(p3,p1,point);
 
     return (orientation1 == orientation2 && orientation2 == orientation3);
-}
-
-bool isVerticeEar(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3, CGL::Polygon2 P){
-    size_t P_size = P.size();
-    size_t i = P_size;
-
-    // If vertice is concave, returns false
-    if(!isVerticeConvex(p1,p2,p3,getOrientation(P)))
-        return false;
-
-    for (size_t i = 0; i < P_size; i++) {
-        if(p1 == P[i] || p2 == P[i] || p3 == P[i]){
-            continue;
-        }
-        if(isInsideTriangle(p1,p2,p3,P[i]))
-            return false;
-    }
-    return true;
 }
 
 
@@ -689,27 +641,6 @@ std::vector<CGL::Mesh::Vertex_index> get_face_vertices(CGL::Mesh::Face_index fac
     return triangle_vertices;
 }
 
-void edge_flip(CGL::Mesh::Halfedge_index& e, CGL::Mesh& polygon){
-    CGL::Mesh::Face_index face = polygon.face(e);
-    CGL::Mesh::Halfedge_index first_triagle_hedge = polygon.next(e);
-    CGL::Mesh::Halfedge_index adjacent_triangle_hedge = polygon.next(polygon.opposite(e));
-
-    CGAL::Euler::join_face(e,polygon);
-    e = CGAL::Euler::split_face(first_triagle_hedge,adjacent_triangle_hedge,polygon);
-}
-
-
-bool can_flip(CGL::Mesh::Halfedge_index initial_hedge, CGL::Mesh polygon){
-    CGL::Mesh::Halfedge_index first_triangle_hedge = polygon.next(initial_hedge);
-    CGL::Mesh::Halfedge_index adjacent_triangle_hedge = polygon.next(polygon.opposite(initial_hedge));
-
-    CGAL::Euler::join_face(initial_hedge,polygon);
-
-    if(!CGL::is_diagonal(polygon,first_triangle_hedge,adjacent_triangle_hedge))
-        return false;
-    
-    return true;
-}
 
 std::vector<CGL::Mesh::Halfedge_index> get_face_halfedges(CGL::Mesh::Face_index face, CGL::Mesh polygon) {
     CGL::Mesh::Halfedge_index first_hedge = polygon.halfedge(face);
