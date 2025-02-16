@@ -92,10 +92,31 @@ int main(int argc, char* argv[]) {
             return EXIT_FAILURE;
         }
         std::cout << "Image conversion successful." << std::endl;
+        cv::Mat blurred;
+        cv::GaussianBlur(img_pgm, blurred, cv::Size(5, 5), 1.0); // smooth out noise
 
-        // Generate random points (simulate vertices) over a 512x512 domain.
-        int nv = 30000;    /* Number of vertices. */
+        cv::Mat edges;
+        double lowerThresh = 40, upperThresh = 150;
+        cv::Canny(blurred, edges, lowerThresh, upperThresh);
+
+        // Canny edge result.
+        std::vector<cv::Point> edgePoints;
+        cv::findNonZero(edges, edgePoints); // edgePoints now holds coordinates of edge pixels
+
+        std::vector<cv::Point> selectedEdgePoints;
+        for (size_t i = 0; i < edgePoints.size(); i += 3) {
+            selectedEdgePoints.push_back(edgePoints[i]);
+        }
+
+        // Build the vector of mesh points.
+        // First, add points derived from the image edges.
         std::vector<Point2> point_vec;
+        for (const auto& pt : selectedEdgePoints) {
+            point_vec.push_back(Point2(pt.x, pt.y));
+        }
+        std::cout << selectedEdgePoints.size();
+        // Generate random points (simulate vertices) over a 512x512 domain.
+        int nv = 0;    /* Number of vertices. */
         CGAL::Random rand;
         CGAL::copy_n_unique(Point_generator(512), nv, std::back_inserter(point_vec));
 
@@ -799,6 +820,10 @@ void add_border(CGL::Mesh& mesh) {
 
     Halfedge_index actual_hedge = first_hedge;
     CGL::print_mesh_faces(mesh);
+
+    /* 
+    add_face_to_border()
+    */
 
     try {
         int iterations = 0;
