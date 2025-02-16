@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
     /* Simple mesh with random vertices. */
     Mesh mesh_delaunay;
 
-    int nv = 30000;    /* Number of vertices. */
+    int nv = 300;    /* Number of vertices. */
 
     std::vector<Point2>   point_vec;
     CGAL::Random         rand;
@@ -162,16 +162,25 @@ CGL::Mesh delaunay_triangulation(std::vector<CGL::Point2> vertices){
 
     std::cout << "Ended inserting points" << std::endl;
 
-    // CGL::print_mesh(delaunay_mesh);
+    for(unsigned i = 0;i < 5;i++)
+        for(Halfedge_index h : delaunay_mesh.halfedges())
+            legalize_edge(h,delaunay_mesh);
 
     remove_super_triangle(delaunay_mesh,super_indexes);
 
-    // CGAL::draw(delaunay_mesh);
     add_border(delaunay_mesh);
+    add_border(delaunay_mesh);
+    add_border(delaunay_mesh);
+
+    delaunay_mesh.collect_garbage();
 
     for(unsigned i = 0;i < 5;i++)
         for(Halfedge_index h : delaunay_mesh.halfedges())
             legalize_edge(h,delaunay_mesh);
+
+    // for(unsigned i = 0;i < 5;i++)
+    //     for(Halfedge_index h : delaunay_mesh.halfedges())
+    //         legalize_edge(h,delaunay_mesh);
 
     if (!delaunay_mesh.is_valid(false))
         printf("Deu ruim");
@@ -727,12 +736,7 @@ void add_border(CGL::Mesh& mesh) {
     Halfedge_index actual_hedge = first_hedge;
 
     try {
-        int iterations = 0;
-        const int maxIterations = 10000;
-
-        while (iterations < maxIterations) {
-            iterations++;
-
+        while (true) {
             // Get the next halfedges in the current border cycle
             Halfedge_index next_hedge = mesh.next(actual_hedge);
             Halfedge_index next_next_hedge = mesh.next(next_hedge);
@@ -747,24 +751,8 @@ void add_border(CGL::Mesh& mesh) {
             if (getOrientationTriangle(p1, p2, p3)) {
                 try {
                     // Create new face and edge
-                    Face_index new_face = mesh.add_face();
-                    Halfedge_index new_he = mesh.add_edge(mesh.target(next_next_hedge),mesh.target(actual_hedge));
+                    Halfedge_index new_he = CGAL::Euler::add_face_to_border(actual_hedge,next_next_hedge,mesh);
                     Halfedge_index new_he_opp = mesh.opposite(new_he);
-
-                    // Set face relationships
-                    mesh.set_face(next_hedge, new_face);
-                    mesh.set_face(next_next_hedge, new_face);
-                    mesh.set_face(new_he, new_face);
-                    mesh.set_halfedge(new_face, next_hedge);
-
-                    // Set next relationships
-                    mesh.set_next(next_hedge, next_next_hedge);
-                    mesh.set_next(next_next_hedge, new_he);
-                    mesh.set_next(new_he, next_hedge);
-
-                    // Update border cycle
-                    mesh.set_next(actual_hedge, new_he_opp);
-                    mesh.set_next(new_he_opp, next3_hedge);
 
                     // Continue with the new border edge
                     actual_hedge = new_he_opp;
@@ -786,14 +774,11 @@ void add_border(CGL::Mesh& mesh) {
 
             // Validate mesh after each iteration
             if (!mesh.is_valid(false)) {
-                std::cerr << "Invalid mesh state at iteration " << iterations << std::endl;
+                std::cerr << "Invalid mesh state" << std::endl;
                 break;
             }
         }
 
-        if (iterations >= maxIterations) {
-            std::cerr << "add_border: Reached maximum iterations" << std::endl;
-        }
 
     } catch (const std::exception& e) {
         std::cerr << "Error in add_border: " << e.what() << std::endl;

@@ -70,6 +70,8 @@ void legalize_edge(Halfedge_index hedge, CGL::Mesh& mesh);
 void remove_super_triangle(CGL::Mesh& mesh, const std::vector<Vertex_index>& super_indexes);
 void add_border(CGL::Mesh& mesh);
 
+std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, int skip_factor = 3, bool add_random_points = false);
+
 bool isEdgeShared(CGL::Mesh::Halfedge_index hedge, std::vector<CGL::Mesh::Face_index> triangle, CGL::Mesh mesh);
 
 void computeBarycentrics(const Point3& p,
@@ -92,88 +94,8 @@ int main(int argc, char* argv[]) {
             return EXIT_FAILURE;
         }
         std::cout << "Image conversion successful." << std::endl;
-        cv::Mat blurred;
-        cv::GaussianBlur(img_pgm, blurred, cv::Size(5, 5), 1.0); // smooth out noise
 
-        cv::Mat edges;
-        double lowerThresh = 30, upperThresh = 100;
-        cv::Canny(blurred, edges, lowerThresh, upperThresh);
-
-        // Canny edge result.
-        std::vector<cv::Point> edgePoints;
-        cv::findNonZero(edges, edgePoints); // edgePoints now holds coordinates of edge pixels
-
-        std::vector<cv::Point> selectedEdgePoints;
-        for (size_t i = 0; i < edgePoints.size(); i += 3) {
-            selectedEdgePoints.push_back(edgePoints[i]);
-        }
-
-        // Build the vector of mesh points.
-        // First, add points derived from the image edges.
-        std::vector<Point2> point_vec;
-        for (const auto& pt : selectedEdgePoints) {
-            point_vec.push_back(Point2(pt.x, pt.y));
-        }
-        std::cout << selectedEdgePoints.size();
-        // Generate random points (simulate vertices) over a 512x512 domain.
-        //If it is going to add random vertices, it may have to check if it wasn't already
-        int nv = 0;    /* Number of vertices. */
-        CGAL::Random rand;
-        CGAL::copy_n_unique(Point_generator(512), nv, std::back_inserter(point_vec));
-
-        // Helper function to check if a point already exists in the vector
-        auto point_exists = [](const std::vector<Point2>& vec, const Point2& point) {
-            return std::find(vec.begin(), vec.end(), point) != vec.end();
-        };
-
-        // Add border points every 16 pixels
-        const int spacing = 16;
-
-        // Top border
-        for (int x = 0; x < img_pgm.cols; x += spacing) {
-            Point2 new_point(x, 0);
-            if (!point_exists(point_vec, new_point)) {
-                point_vec.push_back(new_point);
-            }
-        }
-
-        // Bottom border
-        for (int x = 0; x < img_pgm.cols; x += spacing) {
-            Point2 new_point(x, img_pgm.rows - 1);
-            if (!point_exists(point_vec, new_point)) {
-                point_vec.push_back(new_point);
-            }
-        }
-
-        // Left border (excluding corners as they're already added)
-        for (int y = spacing; y < img_pgm.rows - spacing; y += spacing) {
-            Point2 new_point(0, y);
-            if (!point_exists(point_vec, new_point)) {
-                point_vec.push_back(new_point);
-            }
-        }
-
-        // Right border (excluding corners as they're already added)
-        for (int y = spacing; y < img_pgm.rows - spacing; y += spacing) {
-            Point2 new_point(img_pgm.cols - 1, y);
-            if (!point_exists(point_vec, new_point)) {
-                point_vec.push_back(new_point);
-            }
-        }
-
-        // Ensure corners are added (in case img dimensions aren't multiples of spacing)
-        Point2 corners[] = {
-            Point2(0, 0),
-            Point2(img_pgm.cols - 1, 0),
-            Point2(0, img_pgm.rows - 1),
-            Point2(img_pgm.cols - 1, img_pgm.rows - 1)
-        };
-
-        for (const auto& corner : corners) {
-            if (!point_exists(point_vec, corner)) {  // Corrigido aqui: usando 'corner' em vez de 'new_point'
-                point_vec.push_back(corner);
-            }
-        }
+        std::vector<Point2> point_vec = select_mesh_points(img_pgm);
 
         // Compute the Delaunay triangulation to obtain a mesh.
         Mesh mesh = delaunay_triangulation(point_vec);
@@ -293,6 +215,8 @@ CGL::Mesh delaunay_triangulation(std::vector<CGL::Point2> vertices){
         // For some reason, delaunay_mesh.halfedge(vertex) returns the halfedge in the CW order
         super_hedges.push_back(delaunay_mesh.opposite(delaunay_mesh.halfedge(vertex))); 
     }
+
+
     unsigned i = 0;
     for (auto p = vertices.begin(); p != vertices.end(); ++p, i++) {
         insert_point(delaunay_mesh,*p);
@@ -303,22 +227,28 @@ CGL::Mesh delaunay_triangulation(std::vector<CGL::Point2> vertices){
     std::cout << "Ended inserting points" << std::endl;
 
     // CGL::print_mesh(delaunay_mesh);
+    for(i = 0;i < 5;i++){
+        for(Halfedge_index h : delaunay_mesh.halfedges())
+            legalize_edge(h,delaunay_mesh);
+    }
 
     remove_super_triangle(delaunay_mesh,super_indexes);
 
-    // CGAL::draw(delaunay_mesh);
     add_border(delaunay_mesh);
+    add_border(delaunay_mesh);
+    add_border(delaunay_mesh);
+
     delaunay_mesh.collect_garbage();
 
-    for(i = 0;i < 10;i++){
+    for(i = 0;i < 100;i++){
         for(Halfedge_index h : delaunay_mesh.halfedges())
             legalize_edge(h,delaunay_mesh);
-        std::cout << i << std::endl;
     }
+
     if (!delaunay_mesh.is_valid(false))
         printf("Deu ruim");
+
     CGAL::draw(delaunay_mesh);
-    // CGL::print_mesh_vertices(delaunay_mesh);
 
     return delaunay_mesh;
 }
@@ -595,7 +525,8 @@ void legalize_edge(Halfedge_index hedge, CGL::Mesh& mesh) {
 
 
         // Check if edge needs to be flipped (Delaunay criterion)
-        if (inCircle(mesh.point(a), mesh.point(b), mesh.point(c), mesh.point(d))) {
+        if (inCircle(mesh.point(a), mesh.point(b), mesh.point(c), mesh.point(d)) ||
+            inCircle(mesh.point(c), mesh.point(b), mesh.point(d), mesh.point(a)) ) {
             // std::cout << "Flipping edge between vertices " << a << " and " << b << std::endl;
 
             // CGAL::draw(mesh);
@@ -606,6 +537,8 @@ void legalize_edge(Halfedge_index hedge, CGL::Mesh& mesh) {
             // Recursively legalize the affected edges
             legalize_edge(mesh.next(hedge), mesh);
             legalize_edge(mesh.prev(hedge), mesh);
+            legalize_edge(mesh.next(mesh.opposite(hedge)), mesh);
+            legalize_edge(mesh.prev(mesh.opposite(hedge)), mesh);
 
             // Debug verification after flip
             if (mesh.is_valid(false)) {
@@ -869,19 +802,9 @@ void add_border(CGL::Mesh& mesh) {
     visited.insert(start_vertex);
 
     Halfedge_index actual_hedge = first_hedge;
-    // CGL::print_mesh_faces(mesh);
-
-    /* 
-    add_face_to_border()
-    */
 
     try {
-        int iterations = 0;
-        const int maxIterations = 10000;
-
-        while (iterations < maxIterations) {
-            iterations++;
-
+        while (true) {
             // Get the next halfedges in the current border cycle
             Halfedge_index next_hedge = mesh.next(actual_hedge);
             Halfedge_index next_next_hedge = mesh.next(next_hedge);
@@ -896,24 +819,8 @@ void add_border(CGL::Mesh& mesh) {
             if (getOrientationTriangle(p1, p2, p3)) {
                 try {
                     // Create new face and edge
-                    Face_index new_face = mesh.add_face();
-                    Halfedge_index new_he = mesh.add_edge(mesh.target(next_next_hedge),mesh.target(actual_hedge));
+                    Halfedge_index new_he = CGAL::Euler::add_face_to_border(actual_hedge,next_next_hedge,mesh);
                     Halfedge_index new_he_opp = mesh.opposite(new_he);
-
-                    // Set face relationships
-                    mesh.set_face(next_hedge, new_face);
-                    mesh.set_face(next_next_hedge, new_face);
-                    mesh.set_face(new_he, new_face);
-                    mesh.set_halfedge(new_face, next_hedge);
-
-                    // Set next relationships
-                    mesh.set_next(next_hedge, next_next_hedge);
-                    mesh.set_next(next_next_hedge, new_he);
-                    mesh.set_next(new_he, next_hedge);
-
-                    // Update border cycle
-                    mesh.set_next(actual_hedge, new_he_opp);
-                    mesh.set_next(new_he_opp, next3_hedge);
 
                     // Continue with the new border edge
                     actual_hedge = new_he_opp;
@@ -935,28 +842,18 @@ void add_border(CGL::Mesh& mesh) {
 
             // Validate mesh after each iteration
             if (!mesh.is_valid(false)) {
-                std::cerr << "Invalid mesh state at iteration " << iterations << std::endl;
+                std::cerr << "Invalid mesh state" << std::endl;
                 break;
             }
         }
 
-        if (iterations >= maxIterations) {
-            std::cerr << "add_border: Reached maximum iterations" << std::endl;
-        }
 
     } catch (const std::exception& e) {
         std::cerr << "Error in add_border: " << e.what() << std::endl;
     }
 
-    // Validate mesh after each iteration
-    if (!mesh.is_valid(false)) {
-        std::cout << "Invalid mesh state after adding borders" << std::endl;
-        
-    }
     // Final mesh cleanup
     mesh.collect_garbage();
-    // CGAL::draw(mesh);
-    // CGL::print_mesh_faces(mesh);
 }
 
 //---------------------------------------------------------------------
@@ -984,7 +881,7 @@ cv::Mat rasterizeMesh(const Mesh& mesh, const cv::Mat& inputImg)
     {
         // Get the three vertex indices of this face.
         std::vector<Vertex_index> verts = get_face_vertices(f, mesh);
-        if (verts.size() != 3) continue; // skip non-triangular faces
+        if (verts.size() != 3) continue; // bug
 
         // Get the triangle vertices (assume Point2 has members .x and .y)
         Point3 v0 = mesh.point(verts[0]);
@@ -1034,4 +931,99 @@ cv::Mat rasterizeMesh(const Mesh& mesh, const cv::Mat& inputImg)
     }
 
     return output;
+}
+
+
+std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, int skip_factor, bool add_random_points) {
+    try {
+        // Blur and edge detection
+        cv::Mat blurred;
+        cv::GaussianBlur(img_pgm, blurred, cv::Size(5, 5), 1.0);
+
+        cv::Mat edges;
+        double lowerThresh = 50, upperThresh = 150;
+        cv::Canny(blurred, edges, lowerThresh, upperThresh);
+
+        // Find edge points
+        std::vector<cv::Point> edgePoints;
+        cv::findNonZero(edges, edgePoints);
+
+        // Select subset of edge points
+        std::vector<cv::Point> selectedEdgePoints;
+        for (size_t i = 0; i < edgePoints.size(); i += skip_factor) {
+            selectedEdgePoints.push_back(edgePoints[i]);
+        }
+
+        // Convert to Point2 vector
+        std::vector<Point2> point_vec;
+        for (const auto& pt : selectedEdgePoints) {
+            point_vec.push_back(Point2(pt.x, pt.y));
+        }
+
+        // Helper function to check if a point exists
+        auto point_exists = [](const std::vector<Point2>& vec, const Point2& point) {
+            return std::find(vec.begin(), vec.end(), point) != vec.end();
+        };
+
+        // Add random points if requested
+        if (add_random_points) {
+            CGAL::Random rand;
+            CGAL::copy_n_unique(Point_generator(512), 0, std::back_inserter(point_vec));
+        }
+
+        // Add border points every 16 pixels
+        const int border_spacing = 16;
+
+        // Top border
+        for (int x = 0; x < img_pgm.cols; x += border_spacing) {
+            Point2 new_point(x, 0);
+            if (!point_exists(point_vec, new_point)) {
+                point_vec.push_back(new_point);
+            }
+        }
+
+        // Bottom border
+        for (int x = 0; x < img_pgm.cols; x += border_spacing) {
+            Point2 new_point(x, img_pgm.rows - 1);
+            if (!point_exists(point_vec, new_point)) {
+                point_vec.push_back(new_point);
+            }
+        }
+
+        // Left border (excluding corners)
+        for (int y = border_spacing; y < img_pgm.rows - border_spacing; y += border_spacing) {
+            Point2 new_point(0, y);
+            if (!point_exists(point_vec, new_point)) {
+                point_vec.push_back(new_point);
+            }
+        }
+
+        // Right border (excluding corners)
+        for (int y = border_spacing; y < img_pgm.rows - border_spacing; y += border_spacing) {
+            Point2 new_point(img_pgm.cols - 1, y);
+            if (!point_exists(point_vec, new_point)) {
+                point_vec.push_back(new_point);
+            }
+        }
+
+        // Add corner points
+        Point2 corners[] = {
+            Point2(0, 0),
+            Point2(img_pgm.cols - 1, 0),
+            Point2(0, img_pgm.rows - 1),
+            Point2(img_pgm.cols - 1, img_pgm.rows - 1)
+        };
+
+        for (const auto& corner : corners) {
+            if (!point_exists(point_vec, corner)) {
+                point_vec.push_back(corner);
+            }
+        }
+
+        return point_vec;
+
+    } catch (const std::exception& e) {
+        std::cerr << "Error in select_mesh_points: " << e.what() << std::endl;
+        return std::vector<Point2>();
+    }
 }
