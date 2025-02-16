@@ -70,7 +70,8 @@ void legalize_edge(Halfedge_index hedge, CGL::Mesh& mesh);
 void remove_super_triangle(CGL::Mesh& mesh, const std::vector<Vertex_index>& super_indexes);
 void add_border(CGL::Mesh& mesh);
 
-std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, int skip_factor = 3, bool add_random_points = false);
+std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, int amount = 15000, bool add_random_points = false);
+void addBorderPoints(const cv::Mat& img_pgm, std::vector<Point2>& point_vec, int border_spacing = 16);
 
 bool isEdgeShared(CGL::Mesh::Halfedge_index hedge, std::vector<CGL::Mesh::Face_index> triangle, CGL::Mesh mesh);
 
@@ -934,7 +935,7 @@ cv::Mat rasterizeMesh(const Mesh& mesh, const cv::Mat& inputImg)
 }
 
 
-std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, int skip_factor, bool add_random_points) {
+std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, int amount, bool add_random_points) {
     try {
         // Blur and edge detection
         cv::Mat blurred;
@@ -949,8 +950,9 @@ std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, int skip_factor, 
         cv::findNonZero(edges, edgePoints);
 
         // Select subset of edge points
+        int skip = 4;   // If is bigger, get less points
         std::vector<cv::Point> selectedEdgePoints;
-        for (size_t i = 0; i < edgePoints.size(); i += skip_factor) {
+        for (size_t i = 0; i < edgePoints.size(); i += skip) {     
             selectedEdgePoints.push_back(edgePoints[i]);
         }
 
@@ -965,65 +967,66 @@ std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, int skip_factor, 
             return std::find(vec.begin(), vec.end(), point) != vec.end();
         };
 
-        // Add random points if requested
-        if (add_random_points) {
-            CGAL::Random rand;
-            CGAL::copy_n_unique(Point_generator(512), 0, std::back_inserter(point_vec));
-        }
-
-        // Add border points every 16 pixels
-        const int border_spacing = 16;
-
-        // Top border
-        for (int x = 0; x < img_pgm.cols; x += border_spacing) {
-            Point2 new_point(x, 0);
-            if (!point_exists(point_vec, new_point)) {
-                point_vec.push_back(new_point);
-            }
-        }
-
-        // Bottom border
-        for (int x = 0; x < img_pgm.cols; x += border_spacing) {
-            Point2 new_point(x, img_pgm.rows - 1);
-            if (!point_exists(point_vec, new_point)) {
-                point_vec.push_back(new_point);
-            }
-        }
-
-        // Left border (excluding corners)
-        for (int y = border_spacing; y < img_pgm.rows - border_spacing; y += border_spacing) {
-            Point2 new_point(0, y);
-            if (!point_exists(point_vec, new_point)) {
-                point_vec.push_back(new_point);
-            }
-        }
-
-        // Right border (excluding corners)
-        for (int y = border_spacing; y < img_pgm.rows - border_spacing; y += border_spacing) {
-            Point2 new_point(img_pgm.cols - 1, y);
-            if (!point_exists(point_vec, new_point)) {
-                point_vec.push_back(new_point);
-            }
-        }
-
-        // Add corner points
-        Point2 corners[] = {
-            Point2(0, 0),
-            Point2(img_pgm.cols - 1, 0),
-            Point2(0, img_pgm.rows - 1),
-            Point2(img_pgm.cols - 1, img_pgm.rows - 1)
-        };
-
-        for (const auto& corner : corners) {
-            if (!point_exists(point_vec, corner)) {
-                point_vec.push_back(corner);
-            }
-        }
+        addBorderPoints(img_pgm, point_vec, 16);
 
         return point_vec;
 
     } catch (const std::exception& e) {
         std::cerr << "Error in select_mesh_points: " << e.what() << std::endl;
         return std::vector<Point2>();
+    }
+}
+
+
+void addBorderPoints(const cv::Mat& img_pgm, std::vector<Point2>& point_vec, int border_spacing) {
+    // Helper lambda to check if a point already exists in the vector
+    auto point_exists = [&point_vec](const Point2& point) -> bool {
+        return std::find(point_vec.begin(), point_vec.end(), point) != point_vec.end();
+    };
+
+    // Add top border points
+    for (int x = 0; x < img_pgm.cols; x += border_spacing) {
+        Point2 new_point(x, 0);
+        if (!point_exists(new_point)) {
+            point_vec.push_back(new_point);
+        }
+    }
+
+    // Add bottom border points
+    for (int x = 0; x < img_pgm.cols; x += border_spacing) {
+        Point2 new_point(x, img_pgm.rows - 1);
+        if (!point_exists(new_point)) {
+            point_vec.push_back(new_point);
+        }
+    }
+
+    // Add left border points (excluding corners already added)
+    for (int y = border_spacing; y < img_pgm.rows - border_spacing; y += border_spacing) {
+        Point2 new_point(0, y);
+        if (!point_exists(new_point)) {
+            point_vec.push_back(new_point);
+        }
+    }
+
+    // Add right border points (excluding corners already added)
+    for (int y = border_spacing; y < img_pgm.rows - border_spacing; y += border_spacing) {
+        Point2 new_point(img_pgm.cols - 1, y);
+        if (!point_exists(new_point)) {
+            point_vec.push_back(new_point);
+        }
+    }
+
+    // Add the four corner points
+    Point2 corners[] = {
+        Point2(0, 0),
+        Point2(img_pgm.cols - 1, 0),
+        Point2(0, img_pgm.rows - 1),
+        Point2(img_pgm.cols - 1, img_pgm.rows - 1)
+    };
+
+    for (const auto& corner : corners) {
+        if (!point_exists(corner)) {
+            point_vec.push_back(corner);
+        }
     }
 }
