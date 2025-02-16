@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
         cv::GaussianBlur(img_pgm, blurred, cv::Size(5, 5), 1.0); // smooth out noise
 
         cv::Mat edges;
-        double lowerThresh = 40, upperThresh = 150;
+        double lowerThresh = 30, upperThresh = 100;
         cv::Canny(blurred, edges, lowerThresh, upperThresh);
 
         // Canny edge result.
@@ -116,15 +116,64 @@ int main(int argc, char* argv[]) {
         }
         std::cout << selectedEdgePoints.size();
         // Generate random points (simulate vertices) over a 512x512 domain.
+        //If it is going to add random vertices, it may have to check if it wasn't already
         int nv = 0;    /* Number of vertices. */
         CGAL::Random rand;
         CGAL::copy_n_unique(Point_generator(512), nv, std::back_inserter(point_vec));
 
-        // Add the four image corners so the triangulation covers the entire image.
-        point_vec.push_back(Point2(0, 0));
-        point_vec.push_back(Point2(img_pgm.cols - 1, 0));
-        point_vec.push_back(Point2(0, img_pgm.rows - 1));
-        point_vec.push_back(Point2(img_pgm.cols - 1, img_pgm.rows - 1));
+        // Helper function to check if a point already exists in the vector
+        auto point_exists = [](const std::vector<Point2>& vec, const Point2& point) {
+            return std::find(vec.begin(), vec.end(), point) != vec.end();
+        };
+
+        // Add border points every 16 pixels
+        const int spacing = 16;
+
+        // Top border
+        for (int x = 0; x < img_pgm.cols; x += spacing) {
+            Point2 new_point(x, 0);
+            if (!point_exists(point_vec, new_point)) {
+                point_vec.push_back(new_point);
+            }
+        }
+
+        // Bottom border
+        for (int x = 0; x < img_pgm.cols; x += spacing) {
+            Point2 new_point(x, img_pgm.rows - 1);
+            if (!point_exists(point_vec, new_point)) {
+                point_vec.push_back(new_point);
+            }
+        }
+
+        // Left border (excluding corners as they're already added)
+        for (int y = spacing; y < img_pgm.rows - spacing; y += spacing) {
+            Point2 new_point(0, y);
+            if (!point_exists(point_vec, new_point)) {
+                point_vec.push_back(new_point);
+            }
+        }
+
+        // Right border (excluding corners as they're already added)
+        for (int y = spacing; y < img_pgm.rows - spacing; y += spacing) {
+            Point2 new_point(img_pgm.cols - 1, y);
+            if (!point_exists(point_vec, new_point)) {
+                point_vec.push_back(new_point);
+            }
+        }
+
+        // Ensure corners are added (in case img dimensions aren't multiples of spacing)
+        Point2 corners[] = {
+            Point2(0, 0),
+            Point2(img_pgm.cols - 1, 0),
+            Point2(0, img_pgm.rows - 1),
+            Point2(img_pgm.cols - 1, img_pgm.rows - 1)
+        };
+
+        for (const auto& corner : corners) {
+            if (!point_exists(point_vec, corner)) {  // Corrigido aqui: usando 'corner' em vez de 'new_point'
+                point_vec.push_back(corner);
+            }
+        }
 
         // Compute the Delaunay triangulation to obtain a mesh.
         Mesh mesh = delaunay_triangulation(point_vec);
@@ -261,13 +310,14 @@ CGL::Mesh delaunay_triangulation(std::vector<CGL::Point2> vertices){
     add_border(delaunay_mesh);
     delaunay_mesh.collect_garbage();
 
-    for(i = 0;i < 5;i++)
+    for(i = 0;i < 10;i++){
         for(Halfedge_index h : delaunay_mesh.halfedges())
             legalize_edge(h,delaunay_mesh);
-
+        std::cout << i << std::endl;
+    }
     if (!delaunay_mesh.is_valid(false))
         printf("Deu ruim");
-
+    CGAL::draw(delaunay_mesh);
     // CGL::print_mesh_vertices(delaunay_mesh);
 
     return delaunay_mesh;
@@ -819,7 +869,7 @@ void add_border(CGL::Mesh& mesh) {
     visited.insert(start_vertex);
 
     Halfedge_index actual_hedge = first_hedge;
-    CGL::print_mesh_faces(mesh);
+    // CGL::print_mesh_faces(mesh);
 
     /* 
     add_face_to_border()
@@ -905,8 +955,8 @@ void add_border(CGL::Mesh& mesh) {
     }
     // Final mesh cleanup
     mesh.collect_garbage();
-    CGAL::draw(mesh);
-    CGL::print_mesh_faces(mesh);
+    // CGAL::draw(mesh);
+    // CGL::print_mesh_faces(mesh);
 }
 
 //---------------------------------------------------------------------
