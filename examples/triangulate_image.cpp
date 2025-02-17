@@ -70,7 +70,7 @@ void legalize_edge(Halfedge_index hedge, CGL::Mesh& mesh);
 void remove_super_triangle(CGL::Mesh& mesh, const std::vector<Vertex_index>& super_indexes);
 void add_border(CGL::Mesh& mesh);
 
-std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, int amount = 15000, bool add_random_points = false);
+std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, int amount = 1500, bool add_random_points = false);
 void addBorderPoints(const cv::Mat& img_pgm, std::vector<Point2>& point_vec, int border_spacing = 16);
 
 bool isEdgeShared(CGL::Mesh::Halfedge_index hedge, std::vector<CGL::Mesh::Face_index> triangle, CGL::Mesh mesh);
@@ -108,6 +108,14 @@ int main(int argc, char* argv[]) {
         cv::imshow("Original Image", img_pgm);
         cv::imshow("Rasterized Mesh", rasterized);
         cv::waitKey(0);
+
+        if (!cv::imwrite("rasterized.jpg", rasterized)) {
+            std::cerr << "Failed to save the rasterized image." << std::endl;
+            return EXIT_FAILURE;
+        } else {
+            std::cout << "Rasterized image saved successfully as 'rasterized.jpg'." << std::endl;
+        }
+
     } catch (const std::exception& e) {
         std::cout << "Exception in main: " << e.what() << std::endl;
         return EXIT_FAILURE;
@@ -177,7 +185,6 @@ std::vector<Point2> createSuperTriangle(const std::vector<Point2>& points) {
     double midy = (minY + maxY) / 2.0;
     
     // Create super triangle vertices
-    // Making it 20% larger than necessary to ensure all points are inside
     std::vector<CGL::Point2>  superTriangle;
 
     Point2 p1(midx - 2 * dmax, midy - dmax);
@@ -241,7 +248,7 @@ CGL::Mesh delaunay_triangulation(std::vector<CGL::Point2> vertices){
 
     delaunay_mesh.collect_garbage();
 
-    for(i = 0;i < 100;i++){
+    for(i = 0;i < 5;i++){
         for(Halfedge_index h : delaunay_mesh.halfedges())
             legalize_edge(h,delaunay_mesh);
     }
@@ -527,7 +534,7 @@ void legalize_edge(Halfedge_index hedge, CGL::Mesh& mesh) {
 
         // Check if edge needs to be flipped (Delaunay criterion)
         if (inCircle(mesh.point(a), mesh.point(b), mesh.point(c), mesh.point(d)) ||
-            inCircle(mesh.point(c), mesh.point(b), mesh.point(d), mesh.point(a)) ) {
+            inCircle(mesh.point(a), mesh.point(d), mesh.point(b), mesh.point(c)) ) {
             // std::cout << "Flipping edge between vertices " << a << " and " << b << std::endl;
 
             // CGAL::draw(mesh);
@@ -535,11 +542,17 @@ void legalize_edge(Halfedge_index hedge, CGL::Mesh& mesh) {
             CGAL::Euler::flip_edge(hedge, mesh);
             // CGAL::draw(mesh);
 
+            Halfedge_index h1,h2,h3,h4;
+            h1 = mesh.next(hedge);
+            h2 = mesh.prev(hedge);
+            h3 = mesh.next(mesh.opposite(hedge));
+            h4 = mesh.prev(mesh.opposite(hedge));
+
             // Recursively legalize the affected edges
-            legalize_edge(mesh.next(hedge), mesh);
-            legalize_edge(mesh.prev(hedge), mesh);
-            legalize_edge(mesh.next(mesh.opposite(hedge)), mesh);
-            legalize_edge(mesh.prev(mesh.opposite(hedge)), mesh);
+            legalize_edge(h1, mesh);
+            legalize_edge(h2, mesh);
+            legalize_edge(h3, mesh);
+            legalize_edge(h4, mesh);
 
             // Debug verification after flip
             if (mesh.is_valid(false)) {
@@ -857,21 +870,23 @@ void add_border(CGL::Mesh& mesh) {
     mesh.collect_garbage();
 }
 
-//---------------------------------------------------------------------
-// Helper: Compute barycentric coordinates for point p in triangle (v0,v1,v2)
-void computeBarycentrics(const Point3& p,
-                         const Point3& v0, const Point3& v1, const Point3& v2,
+
+// Compute barycentric coordinates for point p in triangle (v0,v1,v2)
+void computeBarycentrics(const Point3& p, const Point3& v0, const Point3& v1, const Point3& v2,
                          double &lambda0, double &lambda1, double &lambda2)
 {
-    // Using the standard formula:
     double denom = (v1.x() - v0.x()) * (v2.y() - v0.y()) - (v2.x() - v0.x()) * (v1.y() - v0.y());
+
+    if (std::abs(denom) < 1e-10) { // Prevent division by zero
+        lambda0 = lambda1 = lambda2 = -1.0;
+        return;
+    }
     lambda0 = ((v1.x() - p.x()) * (v2.y() - p.y()) - (v2.x() - p.x()) * (v1.y() - p.y())) / denom;
     lambda1 = ((v2.x() - p.x()) * (v0.y() - p.y()) - (v0.x() - p.x()) * (v2.y() - p.y())) / denom;
     lambda2 = 1.0 - lambda0 - lambda1;
 }
 
-//---------------------------------------------------------------------
-// Rasterize the mesh using barycentric interpolation.
+
 cv::Mat rasterizeMesh(const Mesh& mesh, const cv::Mat& inputImg)
 {
     // Create an output image of the same size and type as the input.
@@ -884,7 +899,7 @@ cv::Mat rasterizeMesh(const Mesh& mesh, const cv::Mat& inputImg)
         std::vector<Vertex_index> verts = get_face_vertices(f, mesh);
         if (verts.size() != 3) continue; // bug
 
-        // Get the triangle vertices (assume Point2 has members .x and .y)
+        // Get the triangle vertices
         Point3 v0 = mesh.point(verts[0]);
         Point3 v1 = mesh.point(verts[1]);
         Point3 v2 = mesh.point(verts[2]);
@@ -901,7 +916,6 @@ cv::Mat rasterizeMesh(const Mesh& mesh, const cv::Mat& inputImg)
         int box_max_y = std::min(inputImg.rows - 1, (int)std::ceil(max_y));
 
         // Get the vertex colors from the input image by sampling at their (rounded) positions.
-        // (Assuming the image is single channel.)
         uchar c0 = inputImg.at<uchar>( std::min(inputImg.rows - 1, std::max(0, (int)std::round(v0.y()))),
                                           std::min(inputImg.cols - 1, std::max(0, (int)std::round(v0.x()))) );
         uchar c1 = inputImg.at<uchar>( std::min(inputImg.rows - 1, std::max(0, (int)std::round(v1.y()))),
@@ -950,7 +964,7 @@ std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, int amount, bool 
         cv::findNonZero(edges, edgePoints);
 
         // Select subset of edge points
-        int skip = 4;   // If is bigger, get less points
+        int skip = 2;   // If is bigger, get less points
         std::vector<cv::Point> selectedEdgePoints;
         for (size_t i = 0; i < edgePoints.size(); i += skip) {     
             selectedEdgePoints.push_back(edgePoints[i]);
@@ -979,7 +993,7 @@ std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, int amount, bool 
 
 
 void addBorderPoints(const cv::Mat& img_pgm, std::vector<Point2>& point_vec, int border_spacing) {
-    // Helper lambda to check if a point already exists in the vector
+    // Helper to check if a point already exists in the vector
     auto point_exists = [&point_vec](const Point2& point) -> bool {
         return std::find(point_vec.begin(), point_vec.end(), point) != point_vec.end();
     };
