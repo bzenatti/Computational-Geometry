@@ -70,14 +70,14 @@ void legalize_edge(Halfedge_index hedge, CGL::Mesh& mesh);
 void remove_super_triangle(CGL::Mesh& mesh, const std::vector<Vertex_index>& super_indexes);
 void add_border(CGL::Mesh& mesh);
 
-std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, int amount = 1500, bool add_random_points = false);
+std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, unsigned long long amount = 1500, bool add_random_points = false);
 void addBorderPoints(const cv::Mat& img_pgm, std::vector<Point2>& point_vec, int border_spacing = 16);
 
 bool isEdgeShared(CGL::Mesh::Halfedge_index hedge, std::vector<CGL::Mesh::Face_index> triangle, CGL::Mesh mesh);
 
-void computeBarycentrics(const Point3& p,
-    const Point3& v0, const Point3& v1, const Point3& v2,
+void computeBarycentrics(const Point3& p, const Point3& v0, const Point3& v1, const Point3& v2,
     double &lambda0, double &lambda1, double &lambda2);
+uchar bilinearInterpolate(const cv::Mat& img, float x, float y);
 cv::Mat rasterizeMesh(const Mesh& mesh, const cv::Mat& inputImg);
 
 using namespace cv;
@@ -86,9 +86,25 @@ cv::Mat convert_to_pgm(const std::string& image_path, const std::string& output_
 
 int main(int argc, char* argv[]) {
     try {
-        std::string image_path = "./baboon.jpg";
-        std::string output_path = "./baboon.pgm";
+        // Check that an image path and pixel count were provided.
+        if (argc != 3) {
+            std::cerr << "Usage: " << argv[0] << " <image_path> <pixel_count>" << std::endl;
+            return EXIT_FAILURE;
+        }
 
+        // Retrieve command-line arguments.
+        std::string image_path = argv[1];
+        unsigned long long pixel_amount = 0;
+        try {
+            pixel_amount = std::stoi(argv[2]);
+        } catch (const std::exception& e) {
+            std::cerr << "Invalid pixel count provided: " << argv[2] << std::endl;
+            return EXIT_FAILURE;
+        }
+        // Define the output path for the PGM file.
+        std::string output_path = "./original_converted.pgm";
+
+        // Convert the input image to PGM.
         cv::Mat img_pgm = convert_to_pgm(image_path, output_path);
         if (img_pgm.empty()) {
             std::cout << "Image conversion failed." << std::endl;
@@ -96,7 +112,7 @@ int main(int argc, char* argv[]) {
         }
         std::cout << "Image conversion successful." << std::endl;
 
-        std::vector<Point2> point_vec = select_mesh_points(img_pgm);
+        std::vector<Point2> point_vec = select_mesh_points(img_pgm,pixel_amount,true);
 
         // Compute the Delaunay triangulation to obtain a mesh.
         Mesh mesh = delaunay_triangulation(point_vec);
@@ -887,24 +903,55 @@ void computeBarycentrics(const Point3& p, const Point3& v0, const Point3& v1, co
 }
 
 
+uchar bilinearInterpolate(const cv::Mat& img, float x, float y) {
+    // Get the four surrounding pixel coordinates
+    int x0 = std::floor(x);
+    int x1 = x0 + 1;
+    int y0 = std::floor(y);
+    int y1 = y0 + 1;
+
+    // Calculate interpolation weights
+    float wx = x - x0;
+    float wy = y - y0;
+
+    // Clamp coordinates to image boundaries
+    x0 = std::min(std::max(x0, 0), img.cols - 1);
+    x1 = std::min(std::max(x1, 0), img.cols - 1);
+    y0 = std::min(std::max(y0, 0), img.rows - 1);
+    y1 = std::min(std::max(y1, 0), img.rows - 1);
+
+    // Get pixel values
+    uchar p0 = img.at<uchar>(y0, x0);
+    uchar p1 = img.at<uchar>(y0, x1);
+    uchar p2 = img.at<uchar>(y1, x0);
+    uchar p3 = img.at<uchar>(y1, x1);
+
+    // Perform bilinear interpolation
+    float value = (1 - wx) * (1 - wy) * p0 +
+                 wx * (1 - wy) * p1 +
+                 (1 - wx) * wy * p2 +
+                 wx * wy * p3;
+
+    return static_cast<uchar>(std::round(value));
+}
 cv::Mat rasterizeMesh(const Mesh& mesh, const cv::Mat& inputImg)
 {
-    // Create an output image of the same size and type as the input.
+    // Create output image
     cv::Mat output = cv::Mat::zeros(inputImg.size(), inputImg.type());
+    
+    // Create a debug image for visualization
+    cv::Mat debug_image = inputImg.clone();
+    cv::cvtColor(debug_image, debug_image, cv::COLOR_GRAY2BGR);
 
-    // Loop over each face (triangle) in the mesh.
     for (Face_index f : mesh.faces())
     {
-        // Get the three vertex indices of this face.
         std::vector<Vertex_index> verts = get_face_vertices(f, mesh);
-        if (verts.size() != 3) continue; // bug
+        if (verts.size() != 3) continue;
 
-        // Get the triangle vertices
         Point3 v0 = mesh.point(verts[0]);
         Point3 v1 = mesh.point(verts[1]);
         Point3 v2 = mesh.point(verts[2]);
 
-        // Compute the axis-aligned bounding box of the triangle.
         double min_x = std::min({ v0.x(), v1.x(), v2.x() });
         double max_x = std::max({ v0.x(), v1.x(), v2.x() });
         double min_y = std::min({ v0.y(), v1.y(), v2.y() });
@@ -915,29 +962,36 @@ cv::Mat rasterizeMesh(const Mesh& mesh, const cv::Mat& inputImg)
         int box_min_y = std::max(0, (int)std::floor(min_y));
         int box_max_y = std::min(inputImg.rows - 1, (int)std::ceil(max_y));
 
-        // Get the vertex colors from the input image by sampling at their (rounded) positions.
-        uchar c0 = inputImg.at<uchar>( std::min(inputImg.rows - 1, std::max(0, (int)std::round(v0.y()))),
-                                          std::min(inputImg.cols - 1, std::max(0, (int)std::round(v0.x()))) );
-        uchar c1 = inputImg.at<uchar>( std::min(inputImg.rows - 1, std::max(0, (int)std::round(v1.y()))),
-                                          std::min(inputImg.cols - 1, std::max(0, (int)std::round(v1.x()))) );
-        uchar c2 = inputImg.at<uchar>( std::min(inputImg.rows - 1, std::max(0, (int)std::round(v2.y()))),
-                                          std::min(inputImg.cols - 1, std::max(0, (int)std::round(v2.x()))) );
+        uchar c0 = bilinearInterpolate(inputImg, v0.x(), v0.y());
+        uchar c1 = bilinearInterpolate(inputImg, v1.x(), v1.y());
+        uchar c2 = bilinearInterpolate(inputImg, v2.x(), v2.y());
 
-        // Loop over all pixels in the bounding box.
-        for (int y = box_min_y; y <= box_max_y; ++y)
-        {
-            for (int x = box_min_x; x <= box_max_x; ++x)
-            {
-                // Use the pixel center.
-                Point3 p((double)x + 0.5, (double)y + 0.5,0.0);
+        std::vector<cv::Point> triangle_pts = {
+            cv::Point((int)v0.x(), (int)v0.y()),
+            cv::Point((int)v1.x(), (int)v1.y()),
+            cv::Point((int)v2.x(), (int)v2.y())
+        };
+
+        cv::Scalar color = cv::Scalar(255, 0, 0);
+        for (Halfedge_index h : mesh.halfedges_around_face(mesh.halfedge(f))) {
+            if (mesh.is_border(mesh.opposite(h))) {
+                color = cv::Scalar(0, 0, 255);
+                break;
+            }
+        }
+
+        cv::line(debug_image, triangle_pts[0], triangle_pts[1], color, 1);
+        cv::line(debug_image, triangle_pts[1], triangle_pts[2], color, 1);
+        cv::line(debug_image, triangle_pts[2], triangle_pts[0], color, 1);
+
+        for (int y = box_min_y; y <= box_max_y; ++y) {
+            for (int x = box_min_x; x <= box_max_x; ++x) {
+                Point3 p((double)x + 0.5, (double)y + 0.5, 0.0);
                 double lambda0, lambda1, lambda2;
                 computeBarycentrics(p, v0, v1, v2, lambda0, lambda1, lambda2);
 
-                // Check if the point is inside the triangle (allow a small epsilon tolerance).
                 const double eps = 1e-6;
-                if (lambda0 >= -eps && lambda1 >= -eps && lambda2 >= -eps)
-                {
-                    // Compute the interpolated color.
+                if (lambda0 >= -eps && lambda1 >= -eps && lambda2 >= -eps) {
                     double pixel_val = lambda0 * c0 + lambda1 * c1 + lambda2 * c2;
                     output.at<uchar>(y, x) = (uchar)std::round(pixel_val);
                 }
@@ -945,47 +999,64 @@ cv::Mat rasterizeMesh(const Mesh& mesh, const cv::Mat& inputImg)
         }
     }
 
+    cv::imshow("debug_triangulation", debug_image);
     return output;
 }
 
 
-std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, int amount, bool add_random_points) {
+std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, unsigned long long amount, bool add_random_points) {
     try {
-        // Blur and edge detection
-        cv::Mat blurred;
-        cv::GaussianBlur(img_pgm, blurred, cv::Size(5, 5), 1.0);
-
-        cv::Mat edges;
-        double lowerThresh = 50, upperThresh = 150;
-        cv::Canny(blurred, edges, lowerThresh, upperThresh);
-
-        // Find edge points
-        std::vector<cv::Point> edgePoints;
-        cv::findNonZero(edges, edgePoints);
-
-        // Select subset of edge points
-        int skip = 2;   // If is bigger, get less points
-        std::vector<cv::Point> selectedEdgePoints;
-        for (size_t i = 0; i < edgePoints.size(); i += skip) {     
-            selectedEdgePoints.push_back(edgePoints[i]);
-        }
-
-        // Convert to Point2 vector
         std::vector<Point2> point_vec;
-        for (const auto& pt : selectedEdgePoints) {
-            point_vec.push_back(Point2(pt.x, pt.y));
-        }
-
-        // Helper function to check if a point exists
-        auto point_exists = [](const std::vector<Point2>& vec, const Point2& point) {
-            return std::find(vec.begin(), vec.end(), point) != vec.end();
+        
+        // Function to check if a point already exists in the vector.
+        auto point_exists = [&point_vec](const Point2& point) -> bool {
+            return std::find(point_vec.begin(), point_vec.end(), point) != point_vec.end();
         };
 
+        // Use goodFeaturesToTrack to detect corners.
+        std::vector<cv::Point2f> corners;
+        double qualityLevel = 0.01;     // minimal accepted quality
+        double minDistance  = 1;        // minimum distance between corners
+        cv::goodFeaturesToTrack(img_pgm, corners, amount, qualityLevel, minDistance);
+        for (const auto &pt : corners) {
+            Point2 p(pt.x, pt.y);
+            if (!point_exists(p)) {
+                point_vec.push_back(p);
+            }
+        }
+
+        std::cout << "\nAmount of points edges: " << point_vec.size() << std::endl;
+
+        //Optionally add random points if we still haven't reached the desired count.
+        if (point_vec.size() < amount && add_random_points) {
+            cv::RNG rng(cv::getTickCount());
+            while (point_vec.size() < amount) {
+                int x = rng.uniform(0, img_pgm.cols);
+                int y = rng.uniform(0, img_pgm.rows);
+                Point2 p(x, y);
+                if (!point_exists(p)) {
+                    point_vec.push_back(p);
+                }
+            }
+        }
+
+        std::cout << "\nAmount of points: " << point_vec.size() << std::endl;
+
+        //Add border points to ensure the triangulation covers the image boundary.
         addBorderPoints(img_pgm, point_vec, 16);
 
-        return point_vec;
+        // Debug visualization.
+        cv::Mat debug_img;
+        cv::cvtColor(img_pgm, debug_img, cv::COLOR_GRAY2BGR);
+        for (const auto &pt : point_vec) {
+            cv::circle(debug_img, cv::Point(pt.x(), pt.y()), 1, cv::Scalar(0, 0, 255), -1);
+        }
+        // cv::imshow("Selected Points", debug_img);
+        // cv::waitKey(1);
 
-    } catch (const std::exception& e) {
+        return point_vec;
+    }
+    catch (const std::exception &e) {
         std::cerr << "Error in select_mesh_points: " << e.what() << std::endl;
         return std::vector<Point2>();
     }
@@ -993,7 +1064,7 @@ std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, int amount, bool 
 
 
 void addBorderPoints(const cv::Mat& img_pgm, std::vector<Point2>& point_vec, int border_spacing) {
-    // Helper to check if a point already exists in the vector
+    // Function to check if a point exists
     auto point_exists = [&point_vec](const Point2& point) -> bool {
         return std::find(point_vec.begin(), point_vec.end(), point) != point_vec.end();
     };
