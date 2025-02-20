@@ -48,9 +48,6 @@ bool getOrientationTriangle(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3);
 bool getOrientationTriangle(CGL::Point3 p1, CGL::Point3 p2,CGL::Point3 p3);
 float getTriangleArea(std::vector<CGL::Point2> pts);
 
-double dotProduct(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3,CGL::Point2 p4); // p1p2 and p3p4
-double vectorMagnitude(CGL::Point2 p1, CGL::Point2 p2);
-double angleBetween(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3,CGL::Point2 p4);
 
 bool isInsideTriangle(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3, CGL::Point2 point);
 bool isInsideTriangle(Point3 v1, Point3 v2, Point3 v3, Point3 pt) ;
@@ -73,16 +70,15 @@ void add_border(CGL::Mesh& mesh);
 std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, unsigned long long amount = 1500, bool add_random_points = false);
 void addBorderPoints(const cv::Mat& img_pgm, std::vector<Point2>& point_vec, int border_spacing = 16);
 
-bool isEdgeShared(CGL::Mesh::Halfedge_index hedge, std::vector<CGL::Mesh::Face_index> triangle, CGL::Mesh mesh);
-
 void computeBarycentrics(const Point3& p, const Point3& v0, const Point3& v1, const Point3& v2,
     double &lambda0, double &lambda1, double &lambda2);
 uchar bilinearInterpolate(const cv::Mat& img, float x, float y);
 cv::Mat rasterizeMesh(const Mesh& mesh, const cv::Mat& inputImg);
 
+cv::Mat convert_to_pgm(const std::string& image_path, const std::string& output_path);
+
 using namespace cv;
 
-cv::Mat convert_to_pgm(const std::string& image_path, const std::string& output_path);
 
 int main(int argc, char* argv[]) {
     try {
@@ -101,6 +97,7 @@ int main(int argc, char* argv[]) {
             std::cerr << "Invalid pixel count provided: " << argv[2] << std::endl;
             return EXIT_FAILURE;
         }
+
         // Define the output path for the PGM file.
         std::string output_path = "./original_converted.pgm";
 
@@ -137,46 +134,6 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
-}
-
-
-cv::Mat convert_to_pgm(const std::string& image_path, const std::string& output_path) {
-    // Check if file exists
-    struct stat buffer;
-    if (stat(image_path.c_str(), &buffer) != 0) {
-        std::cout << "File does not exist: " << image_path << std::endl;
-        return cv::Mat();
-    }
-
-    // Read image in color
-    cv::Mat img = cv::imread(image_path, cv::IMREAD_COLOR);
-    if (img.empty()) {
-        std::cout << "Could not read the image: " << image_path << std::endl;
-        return cv::Mat();
-    }
-
-    std::cout << "Original loaded image size: " << img.size() << std::endl;
-
-     // Convert to grayscale
-     cv::Mat gray_img;
-     cv::cvtColor(img, gray_img, cv::COLOR_BGR2GRAY);
- 
-    // Resize to 512x512 if it's not already that size
-    if (gray_img.size() != cv::Size(512, 512)) {
-        cv::Mat resized;
-        cv::resize(gray_img, resized, cv::Size(512, 512));
-        gray_img = resized;
-        std::cout << "Resized image to 512x512" << std::endl;
-    }
-
-    // Save the grayscale image in PGM format
-    if (cv::imwrite(output_path, gray_img)) {
-        std::cout << "PGM file saved: " << output_path << std::endl;
-    } else {
-        std::cout << "Failed to save PGM file: " << output_path << std::endl;
-    }
-
-    return gray_img;
 }
 
 std::vector<Point2> createSuperTriangle(const std::vector<Point2>& points) {
@@ -583,14 +540,6 @@ void legalize_edge(Halfedge_index hedge, CGL::Mesh& mesh) {
     }
 }
 
-bool isEdgeShared(Halfedge_index hedge, std::vector<Face_index> triangle, CGL::Mesh mesh){
-    for (Face_index f : triangle){
-        if(mesh.face(mesh.opposite(hedge)).idx() == f)
-            return true;
-    }
-
-    return false;
-}
 
 //This function receives as parameter three points
 float getDeterminant(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3){
@@ -664,22 +613,7 @@ bool getOrientationTriangle(CGL::Point3 p1, CGL::Point3 p2,CGL::Point3 p3){
     return (left1 && left2 && left3);
 }
 
-// Considering two vectors, p1p2==u and p3p4==v
-double dotProduct(CGL::Point3 p1, CGL::Point3 p2,CGL::Point3 p3,CGL::Point3 p4) {
-    int ux = p2.x() - p1.x(), uy = p2.y() - p1.y();
-    int vx = p4.x() - p3.x(), vy = p4.y() - p3.y();
 
-    return (ux*vx) + (uy*vy);
-}
-
-double vectorMagnitude(CGL::Point3 p1, CGL::Point3 p2){
-    return std::sqrt(dotProduct(p1,p2,p1,p2));
-}
-
-//returns in radians the angle between two vectors, p1p2==u and p3p4==v
-double angleBetween(CGL::Point3 p1, CGL::Point3 p2,CGL::Point3 p3,CGL::Point3 p4){
-    return std::acos((dotProduct(p1,p2,p3,p4))/(vectorMagnitude(p1,p2) * vectorMagnitude(p3,p4)));
-}
 
 // Returns true if point is inside triangle
 bool isInsideTriangle(CGL::Point2 p1, CGL::Point2 p2,CGL::Point2 p3, CGL::Point2 point){
@@ -810,6 +744,45 @@ void remove_super_triangle(CGL::Mesh& mesh, const std::vector<Vertex_index>& sup
     mesh.collect_garbage();
 }
 
+cv::Mat convert_to_pgm(const std::string& image_path, const std::string& output_path) {
+    // Check if file exists
+    struct stat buffer;
+    if (stat(image_path.c_str(), &buffer) != 0) {
+        std::cout << "File does not exist: " << image_path << std::endl;
+        return cv::Mat();
+    }
+
+    // Read image in color
+    cv::Mat img = cv::imread(image_path, cv::IMREAD_COLOR);
+    if (img.empty()) {
+        std::cout << "Could not read the image: " << image_path << std::endl;
+        return cv::Mat();
+    }
+
+    std::cout << "Original loaded image size: " << img.size() << std::endl;
+
+     // Convert to grayscale
+     cv::Mat gray_img;
+     cv::cvtColor(img, gray_img, cv::COLOR_BGR2GRAY);
+ 
+    // Resize to 512x512 if it's not already that size
+    if (gray_img.size() != cv::Size(512, 512)) {
+        cv::Mat resized;
+        cv::resize(gray_img, resized, cv::Size(512, 512));
+        gray_img = resized;
+        std::cout << "Resized image to 512x512" << std::endl;
+    }
+
+    // Save the grayscale image in PGM format
+    if (cv::imwrite(output_path, gray_img)) {
+        std::cout << "PGM file saved: " << output_path << std::endl;
+    } else {
+        std::cout << "Failed to save PGM file: " << output_path << std::endl;
+    }
+
+    return gray_img;
+}
+
 void add_border(CGL::Mesh& mesh) {
     // Find a border halfedge (one with a null face)
     Halfedge_index first_hedge;
@@ -914,7 +887,7 @@ uchar bilinearInterpolate(const cv::Mat& img, float x, float y) {
     float wx = x - x0;
     float wy = y - y0;
 
-    // Clamp coordinates to image boundaries
+    // image boundaries
     x0 = std::min(std::max(x0, 0), img.cols - 1);
     x1 = std::min(std::max(x1, 0), img.cols - 1);
     y0 = std::min(std::max(y0, 0), img.rows - 1);
@@ -1015,7 +988,7 @@ std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, unsigned long lon
 
         // Use goodFeaturesToTrack to detect corners.
         std::vector<cv::Point2f> corners;
-        double qualityLevel = 0.01;     // minimal accepted quality
+        double qualityLevel = 0.005;     // minimal accepted quality
         double minDistance  = 1;        // minimum distance between corners
         cv::goodFeaturesToTrack(img_pgm, corners, amount, qualityLevel, minDistance);
         for (const auto &pt : corners) {
@@ -1025,7 +998,7 @@ std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, unsigned long lon
             }
         }
 
-        std::cout << "\nAmount of points edges: " << point_vec.size() << std::endl;
+        std::cout << "\nAmount of corner points: " << point_vec.size() << std::endl;
 
         //Optionally add random points if we still haven't reached the desired count.
         if (point_vec.size() < amount && add_random_points) {
