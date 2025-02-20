@@ -988,9 +988,9 @@ std::vector<Point2> select_mesh_points(const cv::Mat& img_pgm, unsigned long lon
 
         // Use goodFeaturesToTrack to detect corners.
         std::vector<cv::Point2f> corners;
-        double qualityLevel = 0.005;     // minimal accepted quality
+        double qualityLevel = 0.001;     // minimal accepted quality
         double minDistance  = 1;        // minimum distance between corners
-        cv::goodFeaturesToTrack(img_pgm, corners, amount, qualityLevel, minDistance);
+        cv::goodFeaturesToTrack(img_pgm, corners, amount, qualityLevel, minDistance, cv::noArray(),2);
         for (const auto &pt : corners) {
             Point2 p(pt.x, pt.y);
             if (!point_exists(p)) {
